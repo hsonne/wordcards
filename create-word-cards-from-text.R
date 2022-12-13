@@ -65,7 +65,11 @@ words_to_word_table <- function(words)
     )
   ) %>%
     dplyr::bind_rows(.id = "nchar") %>%
-    kwb.utils::orderBy("frequency", decreasing = TRUE)
+    kwb.utils::orderBy(
+      c("frequency", "word"), 
+      decreasing = c(TRUE, FALSE),
+      method = "radix"
+    )
 }
 
 # plot_word_cards --------------------------------------------------------------
