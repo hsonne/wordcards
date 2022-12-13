@@ -11,8 +11,13 @@ if (FALSE)
 
   View(word_table)
   
-  plot_word_cards(words = word_table$word)
-  plot_word_cards(words = word_table$word, frequencies = word_table$frequency)
+  plot_word_cards(word_table$word, "word-cards.pdf")
+  
+  plot_word_cards(
+    word_table$word, 
+    frequencies = word_table$frequency,
+    file = "word-cards-with-freq.pdf"
+  )
 }
 
 # read_story_kater_leo_arzt ----------------------------------------------------
@@ -63,7 +68,11 @@ words_to_word_table <- function(words)
 
 # plot_word_cards --------------------------------------------------------------
 plot_word_cards <- function(
-    words, per_page = 32L, cex = 2, y = 0.3, 
+    words,
+    file = NULL,
+    per_page = 32L, 
+    cex = 2, 
+    y = 0.3, 
     plot_rank = TRUE,
     plot_nchar = TRUE,
     frequencies = NULL
@@ -75,7 +84,7 @@ plot_word_cards <- function(
     }
   }
   
-  kwb.utils::toPdf(landscape = FALSE, {
+  kwb.utils::toPdf(pdfFile = file, landscape = FALSE, expressions = {
 
     mfrow <- kwb.plot::bestRowColumnSetting(per_page, target.ratio = 0.71)
     
