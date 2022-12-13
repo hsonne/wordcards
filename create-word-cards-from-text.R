@@ -47,7 +47,7 @@ clean_text <- function(raw_text)
 {
   kwb.utils::multiSubstitute(raw_text, list(
     '[“„.,?!:-]' = " ",
-    "[^A-Za-zäöüß]" = ".",
+    "[^A-Za-zÄÖÜäöüß]" = ".",
     "[.]+" = " "
   ))
 }
