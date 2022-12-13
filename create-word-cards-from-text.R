@@ -11,12 +11,14 @@ if (FALSE)
 
   View(word_table)
   
-  plot_word_cards(word_table$word, "word-cards.pdf")
+  kwb.utils::createDirectory("output")
+  
+  plot_word_cards(word_table$word, "output/cards_kater-leo.pdf")
   
   plot_word_cards(
     word_table$word, 
     frequencies = word_table$frequency,
-    file = "word-cards-with-freq.pdf"
+    file = "output/cards_kater-leo_with-freq.pdf"
   )
 }
 
