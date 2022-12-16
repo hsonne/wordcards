@@ -1,14 +1,18 @@
 library(magrittr)
 
-# MAIN -------------------------------------------------------------------------
+# MAIN: Get raw text -----------------------------------------------------------
 if (FALSE)
 {
   files <- dir("texts", "\\.txt$", full.names = TRUE)
   
-  file <- files[3L]
+  file <- files[2L]
 
   raw_text <- read_text(file)
+}
 
+# MAIN: Create word cards ------------------------------------------------------
+if (FALSE)
+{
   words <- text_to_words(raw_text)
 
   article_guesses <- guess_nouns_with_articles(words)
@@ -36,6 +40,34 @@ if (FALSE)
     label_types = c(1L, 2L, 2L)
   )
 
+}
+
+# MAIN: Find syllables ---------------------------------------------------------
+if (FALSE)
+{
+  all_words <- sort(unique(tolower(text_to_words(raw_text))))
+  
+  is_syllable <- nchar(all_words) <= 3L
+  
+  syllables <- all_words[is_syllable]
+  
+  writeLines(syllables)
+  
+  # Remaining words, to be split into syllables
+  words <- all_words[!is_syllable]
+  
+  #hyphenation <- lapply(words, call_hyphenation_service)
+  
+  words_raw <- kwb.utils::multiSubstitute(words, get_syllable_replacements())
+  writeLines(grep("-", words_raw, value = TRUE))
+  
+  word_data <- split_words(words)
+  
+  lapply(split(word_data, word_data$type), function(df) {
+    sort(table(df$part), decreasing = TRUE)
+  })
+  
+  View(word_data)
 }
 
 # Download texts ---------------------------------------------------------------
@@ -287,4 +319,83 @@ correct_article_guesses <- function(article_guesses)
   article_guesses[is_match] <- corrections[i[is_match]]
 
   article_guesses
+}
+
+# call_hyphenation_service -----------------------------------------------------
+call_hyphenation_service <- function(word)
+{
+  url <- "https://www.silbentrennung24.de/wort/"
+  
+  html <- kwb.utils::catAndRun(
+    paste("Looking up hyphenation for", word),
+    try(rvest::read_html(paste0(url, URLencode(word))))
+  )
+  
+  if (kwb.utils::isTryError(html)) {
+    return(NULL)
+  }
+  
+  html %>%
+    rvest::html_element(xpath = "//div[@id = 'termresult']") %>%
+    rvest::html_text()  
+}
+
+# get_syllable_replacements ----------------------------------------------------
+get_syllable_replacements <- function()
+{
+  c(
+    "^all[aeiou]"
+    #stats::setNames(as.list(paste0("-", syllables, "-")), syllables),
+    #replacements_double_consonants(),
+    #"^(be)([^ist])" = "\\1-\\2"
+    , "-+" = "-"
+    , "^-" = ""
+    , "-$" = ""
+  )
+}
+
+# replacements_double_consonants -----------------------------------------------
+replacements_double_consonants <- function()
+{
+  consonants <- strsplit("bdfglmnprt", "")[[1L]]
+  replacements <- as.list(paste0(consonants, "-", consonants, "\\1"))
+  stats::setNames(replacements, paste0(consonants, consonants, "(.{1,})$"))
+}
+
+# split_words -------------------------------------------------------------------
+split_words <- function(words)
+{
+  word_chars <- stats::setNames(strsplit(tolower(words), ""), words)
+  
+  word_parts <- lapply(word_chars, function(chars) {
+    changes <- kwb.utils::findChanges(is_vowel(chars))
+    changes$part <- sapply(seq_len(nrow(changes)), function(i) {
+      paste0(chars[changes$starts_at[i]:changes$ends_at[i]], collapse = "")
+    })
+    changes
+  })
+  
+  word_data <- word_parts %>%
+    kwb.utils::rbindAll(nameColumn = "word") %>%
+    kwb.utils::renameColumns(list(starts_at = "from", "ends_at" = "to"))
+  
+  word_data$nchar <- word_data$to - word_data$from + 1L
+  
+  type_name <- function(n, type) paste0(n, type, ifelse(n > 1L, "s", ""))
+
+  word_data$type <- ifelse(
+    word_data$value, 
+    type_name(word_data$nchar, "vowel"), 
+    type_name(word_data$nchar, "consonant")
+  )
+  
+  word_data %>%
+    kwb.utils::removeColumns("value") %>%
+    kwb.utils::moveColumnsToFront("word")
+}
+
+# is_vowel ---------------------------------------------------------------------
+is_vowel <- function(chars)
+{
+  grepl("[aeiouäöüy]", chars)
 }
