@@ -5,7 +5,7 @@ if (FALSE)
 {
   files <- dir("texts", "\\.txt$", full.names = TRUE)
   
-  file <- files[2L]
+  file <- files[3L]
 
   raw_text <- read_text(file)
 }
@@ -57,9 +57,8 @@ if (FALSE)
   words <- all_words[!is_syllable]
   
   #hyphenation <- lapply(words, call_hyphenation_service)
-  
-  words_raw <- kwb.utils::multiSubstitute(words, get_syllable_replacements())
-  writeLines(grep("-", words_raw, value = TRUE))
+  #words_raw <- kwb.utils::multiSubstitute(words, get_syllable_replacements())
+  #writeLines(grep("-", words_raw, value = TRUE))
   
   word_data <- split_words(words)
   
@@ -68,6 +67,135 @@ if (FALSE)
   })
   
   View(word_data)
+
+  all_sets <- split(word_data, word_data$word)
+  {
+    sets <- all_sets
+    syllables_by_pattern <- list()
+    
+    type_patterns <- sapply(sets, function(set) paste(set$type, collapse = "-"))
+    
+    pattern <- "1c-1v-2c-1v-1c"
+    has_ch <- sapply(sets, function(x) nrow(x) >=3L && x$part[3L] == "ch")
+    has_ck <- sapply(sets, function(x) nrow(x) >=3L && x$part[3L] == "ck")
+    is_match <- (type_patterns == pattern & !has_ch & !has_ck)
+    matching_words <- names(sets[is_match])
+    syllables_by_pattern[[pattern]] <- split_after(matching_words, 3L)
+    sets <- sets[!is_match]
+    type_patterns <- type_patterns[!is_match]
+    
+    pattern <- "1c-1v-2c-1v"
+    has_ch_ck <- sapply(sets, function(x) {
+      nrow(x) >=3L && x$part[3L] %in% c("ch", "ck")
+    })
+    is_match <- (type_patterns == pattern & !has_ch_ck)
+    matching_words <- names(sets[is_match])
+    syllables_by_pattern[[pattern]] <- split_after(matching_words, 3L)
+    sets <- sets[!is_match]
+    type_patterns <- type_patterns[!is_match]
+    
+    pattern <- "2c-1v-1c-1v-1c"
+    has_sz <- sapply(sets, function(x) nrow(x) >=3L && x$part[3L] == "ß")
+    is_match <- (type_patterns == pattern & !has_sz)
+    matching_words <- names(sets[is_match])
+    syllables_by_pattern[[pattern]] <- split_after(matching_words, 3L)
+    sets <- sets[!is_match]
+    type_patterns <- type_patterns[!is_match]
+    
+    pattern <- "1c-2v-1c" # Ausnahme: säen
+    has_diphthong <- sapply(sets, function(x) nrow(x) >=2L && is_diphthong(x$part[2L]))
+    which(has_diphthong)
+    is_match <- (type_patterns == pattern & has_diphthong)
+    matching_words <- names(sets[is_match])
+    syllables_by_pattern[[pattern]] <- split_after(matching_words, 0L)
+    sets <- sets[!is_match]
+    type_patterns <- type_patterns[!is_match]
+    
+    #"1c-2v-2c-1v-2c-1v-1c" = 0L, # "mais-kol-ben" "mais-sor-ten" "weib-lic-hen"
+    #"1c-2v-1c" = 0L, # "hier" "säen"
+    
+    split_at <- list(
+      "2v-2c" = 0L,
+      "1c-1v-2c" = 0L,
+      "1c-1v-3c" = 0L,
+      "1c-1v-4c" = 0L,
+      "1c-2v-1c" = 0L, # TODO: except: "le-os"
+      "2c-1v-1c" = 0L,
+      "2c-1v-2c" = 0L,
+      "2c-2v-1c" = 0L,
+      "3c-1v-2c" = 0L,
+      "4c-1v-2c" = 0L,
+      "1v-1c-1v-1c" = 0L,
+      
+      "1v-2c-1v" = 2L,
+      "1v-2c-1v-1c" = 2L,
+      "2v-1c-1v-1c" = 2L,
+      "1c-1v-1c-1v-1c" = 2L,
+      "1c-1v-1c-1v-2c" = 2L,
+      "1c-1v-2c-1v-1c" = 2L, 
+      "1c-1v-3c-1v-2c" = 2L, # TODO: except "wirklich"
+      
+      "1v-2c-1v-3c-1v" = c(2L, 6L),
+      "1c-1v-1c-1v-1c-1v" = c(2L, 4L),
+      "1v-2c-1v-1c-1v-1c" = c(2L, 4L),
+      "1c-1v-1c-1v-2c-1v-1c" = c(2L, 5L), # TODO: exept: her-un-ter
+      "1c-1v-1c-1v-3c-1v-1c" = c(2L, 6L), # TODO: except ko-mi-schen (sch)
+            
+      "1c-2v-1c-1v" = 3L,
+      "2c-1v-1c-1v" = 3L,
+      "2v-2c-1v-1c" = 3L,
+      "1c-1v-1c-2v-1c" = 3L, # TODO: except: ge-fiel
+      "1c-1v-2c-1v-2c" = 3L,
+      "1c-1v-2c-1v-3c" = 3L, # TODO: except "gestärkt"
+      "1c-2v-1c-1v-1c" = 3L,
+      "1c-1v-2c-1v-2c-1v" = c(3L, 6L),  
+      "1c-1v-2c-1v-2c-1v-1c" = c(3L, 6L),
+      
+      "1c-1v-3c-1v" = 4L,
+      "2c-1v-2c-1v" = 4L,
+      "1c-1v-3c-1v-1c" = 4L, # TODO: except: wi-scher (look for sch)
+      "1c-1v-4c-1v-1c" = 4L, # TODO: except "menschen" (sch)
+      "1c-2v-2c-1v-2c" = 4L,
+      "2c-1v-2c-1v-1c" = 4L, # TODO: except ch, ck: kra-chen ste-cken
+      "2c-1v-2c-1v-2c" = 4L,
+      "2c-2v-1c-1v-1c" = 4L,
+      
+      "2c-1v-3c-1v" = 5L,
+      "2c-1v-3c-1v-2c" = 5L, # TODO: except: "früh-stück"
+      "4c-1v-1c-1v-1c" = 5L,
+      
+      "3c-1v-3c-1v" = 6L
+    )
+    
+    for (pattern in names(split_at)) {
+      is_match <- (type_patterns == pattern)
+      matching_words <- names(sets[is_match])
+      if (length(matching_words)) {
+        syllables <- split_after(matching_words, split_at[[pattern]])
+        syllables_by_pattern[[pattern]] <- syllables
+        sets <- sets[!is_match]
+        type_patterns <- type_patterns[!is_match]
+      }
+    }
+  }
+
+  (type_stats <- sort(table(type_patterns)))
+  
+  #"2c-1v-1c-1v", #3, skip sz at 4
+  #"2c-1v-1c-1v" %in% names(type_stats)
+  
+  patterns <- rev(names(type_stats))
+  
+  p <- patterns
+
+  kwb.utils::excludeNULL(lapply(p, function(pattern) {
+    is_match <- (type_patterns == pattern)
+    if (any(is_match)) names(sets[is_match])
+  }))
+  
+  length(unlist(syllables_by_pattern))
+  length(type_patterns)
+  sort(names(sets))
 }
 
 # Download texts ---------------------------------------------------------------
@@ -381,12 +509,12 @@ split_words <- function(words)
   
   word_data$nchar <- word_data$to - word_data$from + 1L
   
-  type_name <- function(n, type) paste0(n, type, ifelse(n > 1L, "s", ""))
+  type_name <- function(n, type) paste0(n, type) #, ifelse(n > 1L, "s", ""))
 
   word_data$type <- ifelse(
     word_data$value, 
-    type_name(word_data$nchar, "vowel"), 
-    type_name(word_data$nchar, "consonant")
+    type_name(word_data$nchar, "v"), 
+    type_name(word_data$nchar, "c")
   )
   
   word_data %>%
@@ -398,4 +526,44 @@ split_words <- function(words)
 is_vowel <- function(chars)
 {
   grepl("[aeiouäöüy]", chars)
+}
+
+# split_after ------------------------------------------------------------------
+split_after <- function(x, i)
+{
+  stopifnot(is.character(x))
+  
+  if (length(x) > 1L) {
+    return(sapply(x, split_after, i, USE.NAMES = FALSE))
+  }
+  
+  if (length(x) == 0L || all(i == 0L)) {
+    return(x)
+  }
+  
+  n_char <- nchar(x)
+  
+  stopifnot(all(i < n_char))
+  
+  if (length(i) == 1L) {
+    return(paste0(substr(x, 1L, i), "-", substr(x, i + 1L, n_char)))
+  }  
+  
+  if (length(i) == 2L) {
+    return(paste0(
+      substr(x, 1L, i[1L]), "-", 
+      substr(x, i[1L] + 1L, i[2L]), "-",
+      substr(x, i[2L] + 1L, n_char)
+    ))
+  }  
+  
+  stop("not implemented")  
+}
+
+# is_diphthong -----------------------------------------------------------------
+# Die bekanntesten Schreibungen von Diphthongen im Deutschen sind ei, au, äu und 
+# eu; selten sind ai, oi und ui. 
+is_diphthong <- function(x)
+{
+  x %in% c("ei", "au", "äu", "eu", "ai", "oi", "ui.")
 }
