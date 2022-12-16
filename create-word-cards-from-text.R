@@ -3,56 +3,51 @@ library(magrittr)
 # MAIN -------------------------------------------------------------------------
 if (FALSE)
 {
-  raw_text <- read_story_kater_leo_arzt()
+  files <- dir("texts", "\\.txt$", full.names = TRUE)
   
-  raw_text <- read_text("texts/hahn-und-huhn.txt")
-  raw_text <- read_text("texts/die-groesste-getreidepflanze")
-  
+  file <- files[3L]
+
+  raw_text <- read_text(file)
+
   words <- text_to_words(raw_text)
 
   article_guesses <- guess_nouns_with_articles(words)
-
-  articles <- correct_article_guesses(article_guesses, corrections = c(
-    "die Diele",
-    "die Küche",
-    "die Spitze",
-    "die Stube"
-  ))
-
+  articles <- correct_article_guesses(article_guesses)
   writeLines(articles)
   
-  word_table <- words_to_word_table(words)
-  word_table <- words_to_word_table(words, to_lower = FALSE)
+  #word_table_lower <- words_to_word_table(words)
+  
+  word_table_original <- words_to_word_table(words, to_lower = FALSE)
+  word_table <- aggregate_lower_upper_case(word_table_original)
 
-  View(word_table)
+  #View(word_table)
+  #View(word_table_original)
   
   kwb.utils::createDirectory("output")
-  
-  plot_word_cards(word_table$word, "output/cards_kater-leo.pdf")
-  plot_word_cards(word_table$word, "output/cards_hahn-und-huhn.pdf")
+
+  name <- kwb.utils::removeExtension(basename(file))
 
   plot_word_cards(
     word_table$word, 
     frequencies = word_table$frequency,
-    file = "output/cards_kater-leo_with-freq.pdf"
-  )
-  
-  plot_word_cards(
-    word_table$word, 
-    frequencies = word_table$frequency,
-    file = "output/cards_hahn-und-hun_with-freq.pdf", 
+    file = sprintf("output/cards_%s.pdf", name), 
     both_cases = FALSE, 
-    cex = 2.2
+    cex = 2.2,
+    label_types = c(1L, 2L, 2L)
   )
+
+}
+
+# Download texts ---------------------------------------------------------------
+if (FALSE)
+{
+  text <- read_story_kater_leo_arzt()
   
-  plot_word_cards(
-    word_table$word, 
-    frequencies = word_table$frequency,
-    file = "output/cards_die-groesste-getreidepflanze.pdf", 
-    both_cases = FALSE, 
-    cex = 2.2
-  )
+  con <- file("texts/kater-leo-arzt.txt", "wt", encoding = "UTF-8")
   
+  writeLines(text, con)
+  
+  close(con)
 }
 
 # read_story_kater_leo_arzt ----------------------------------------------------
@@ -108,11 +103,41 @@ words_to_word_table <- function(words, to_lower = TRUE)
     )
   ) %>%
     dplyr::bind_rows(.id = "nchar") %>%
-    kwb.utils::orderBy(
-      c("frequency", "word"), 
-      decreasing = c(TRUE, FALSE),
-      method = "radix"
-    )
+    order_by_frequency_and_word()
+}
+
+# order_by_frequency_and_word --------------------------------------------------
+order_by_frequency_and_word <- function(data)
+{
+  kwb.utils::orderBy(
+    data, 
+    c("frequency", "word"), 
+    decreasing = c(TRUE, FALSE),
+    method = "radix"
+  )
+}
+
+# aggregate_lower_upper_case ---------------------------------------------------
+aggregate_lower_upper_case <- function(word_table)
+{
+  lower_words <- tolower(word_table$word)
+  
+  i <- which(duplicated(lower_words))  
+  
+  if (length(i) == 0L) {
+    return(word_table)
+  }
+  
+  j <- which(lower_words %in% lower_words[i])
+  
+  data <- word_table[j, ]
+  data$word <- tolower(data$word)
+  
+  lower_upper_stats <- aggregate(frequency ~ nchar + word, data = data, sum)
+  
+  word_table <- rbind(word_table[-j, ], lower_upper_stats)
+  
+  order_by_frequency_and_word(word_table)
 }
 
 # plot_word_cards --------------------------------------------------------------
@@ -125,7 +150,8 @@ plot_word_cards <- function(
     plot_rank = TRUE,
     plot_nchar = TRUE,
     frequencies = NULL,
-    both_cases = TRUE
+    both_cases = TRUE,
+    label_types = c(1L, 1L, 1L)
 )
 {
   text_if <- function(condition, x, text, y = -0.9) {
@@ -162,11 +188,46 @@ plot_word_cards <- function(
         text(0, 0, word, cex = cex)
       }
       
-      text_if(isTRUE(plot_rank), -0.9, sprintf("#%d", i))
-      text_if(!is.null(frequencies), 0, sprintf("%d-mal", frequencies[i]))
-      text_if(isTRUE(plot_nchar), 0.9, sprintf("%der", nchar(word)))
+      text_if(
+        isTRUE(plot_rank), 
+        x = -0.9, 
+        text = label_rank(i, label_types[1L])
+      )
+      
+      text_if(
+        condition = !is.null(frequencies), 
+        x = 0, 
+        text = label_times(frequencies[i], label_types[2L])
+      )
+      
+      text_if(
+        condition = isTRUE(plot_nchar), 
+        x = 0.9, 
+        text = label_nchar(nchar(word), label_types[3L])
+      )
     }
   })
+}
+
+# label_rank -------------------------------------------------------------------
+label_rank <- function(x, type = 2L)
+{
+  if (type == 1L) return(sprintf("#%d", x))
+  if (type == 2L) return(sprintf("%d.", x))
+}
+
+# label_times ------------------------------------------------------------------
+label_times <- function(x, type = 2L)
+{
+  if (type == 1L) return(sprintf("%d-mal", x))
+  if (type == 2L) return(sprintf("%dx", x))
+}
+
+# label_nchar ------------------------------------------------------------------
+label_nchar <- function(x, type = 2L)
+{
+  if (type == 1L) return(sprintf("%der", x))
+  if (type == 2L) return(sprintf("%d", x))
 }
 
 # guess_nouns_with_articles ----------------------------------------------------
@@ -199,10 +260,24 @@ is_article <- function(word)
   tolower(word) %in% c("der", "die", "das")
 }
 
-
 # correct_article_guesses ------------------------------------------------------
-correct_article_guesses <- function(article_guesses, corrections)
+correct_article_guesses <- function(article_guesses)
 {
+  corrections <- c(
+    "die Arbeitsplatte", 
+    "die Arztpraxis", 
+    "die Diele",
+    "die Küche",
+    "die Praxis", 
+    "die Reihe",
+    "die Spitze",
+    "die Spüle", 
+    "die Stube",
+    "die Tulpen", 
+    "die Untersuchung", 
+    "die Zwischenzeit"
+  )
+  
   get_noun <- function(x) sapply(strsplit(x, " "), "[", 2L)
   
   i <- match(get_noun(article_guesses), get_noun(corrections))
