@@ -5,8 +5,8 @@ if (FALSE)
 {
   files <- dir("texts", "\\.txt$", full.names = TRUE)
   
-  file <- files[3L]
-
+  file <- files[2L]
+  
   raw_text <- read_text(file)
 }
 
@@ -14,7 +14,7 @@ if (FALSE)
 if (FALSE)
 {
   words <- text_to_words(raw_text)
-
+  
   article_guesses <- guess_nouns_with_articles(words)
   articles <- correct_article_guesses(article_guesses)
   writeLines(articles)
@@ -23,14 +23,14 @@ if (FALSE)
   
   word_table_original <- words_to_word_table(words, to_lower = FALSE)
   word_table <- aggregate_lower_upper_case(word_table_original)
-
+  
   #View(word_table)
   #View(word_table_original)
   
   kwb.utils::createDirectory("output")
-
+  
   name <- kwb.utils::removeExtension(basename(file))
-
+  
   plot_word_cards(
     word_table$word, 
     frequencies = word_table$frequency,
@@ -39,163 +39,62 @@ if (FALSE)
     cex = 2.2,
     label_types = c(1L, 2L, 2L)
   )
-
+  
 }
 
 # MAIN: Find syllables ---------------------------------------------------------
 if (FALSE)
 {
+  # All different words occurring in the text
   all_words <- sort(unique(tolower(text_to_words(raw_text))))
   
+  # Has a word three or less characters and is thus a syllable?
   is_syllable <- nchar(all_words) <= 3L
   
-  syllables <- all_words[is_syllable]
-  
-  writeLines(syllables)
+  # Vector of short words consisting of one syllable
+  short_words <- all_words[is_syllable]
   
   # Remaining words, to be split into syllables
   words <- all_words[!is_syllable]
+
+  # Split words into parts of non-changing type of letter (consonant or vocal)
+  word_data <- split_words(words, style = 1L)
+  #View(word_data)
   
+  # Split word_data into a set of data frames for each word
+  all_sets <- split(word_data, word_data$word)
+
+  # Identify syllables by going through list of predefined patterns  
+  syllables_by_pattern <- find_syllables(sets = all_sets)
+
+  # Prepare split position assignments for non treated patterns  
+  prepare_split_assignments_for_non_treated(x = syllables_by_pattern)
+
+  # Modify "patterns_tmp.txt" by adding "-" within the words and save as
+  # "patterns.txt"
+  create_split_assignments_from_pattern_file()
+  
+  length(all_words)
+  sorted_syllables <- sort(unname(unlist(syllables_by_pattern)))
+  words_from_syllables <- gsub("-", "", sorted_syllables)
+  length(words_from_syllables)
+  
+  stopifnot(0L == length(
+    setdiff(all_words, c(short_words, words_from_syllables))
+  ))
+  
+  write_lines_utf8(
+    sort(c(short_words, sorted_syllables)), 
+    path = "output/syllables_tmp.txt"
+  )
+}
+
+# MAIN: Other approaches -------------------------------------------------------
+if (FALSE)
+{
   #hyphenation <- lapply(words, call_hyphenation_service)
   #words_raw <- kwb.utils::multiSubstitute(words, get_syllable_replacements())
   #writeLines(grep("-", words_raw, value = TRUE))
-  
-  word_data <- split_words(words)
-  
-  lapply(split(word_data, word_data$type), function(df) {
-    sort(table(df$part), decreasing = TRUE)
-  })
-  
-  View(word_data)
-
-  all_sets <- split(word_data, word_data$word)
-  {
-    sets <- all_sets
-    syllables_by_pattern <- list()
-    
-    type_patterns <- sapply(sets, function(set) paste(set$type, collapse = "-"))
-    
-    pattern <- "1c-1v-2c-1v-1c"
-    has_ch <- sapply(sets, function(x) nrow(x) >=3L && x$part[3L] == "ch")
-    has_ck <- sapply(sets, function(x) nrow(x) >=3L && x$part[3L] == "ck")
-    is_match <- (type_patterns == pattern & !has_ch & !has_ck)
-    matching_words <- names(sets[is_match])
-    syllables_by_pattern[[pattern]] <- split_after(matching_words, 3L)
-    sets <- sets[!is_match]
-    type_patterns <- type_patterns[!is_match]
-    
-    pattern <- "1c-1v-2c-1v"
-    has_ch_ck <- sapply(sets, function(x) {
-      nrow(x) >=3L && x$part[3L] %in% c("ch", "ck")
-    })
-    is_match <- (type_patterns == pattern & !has_ch_ck)
-    matching_words <- names(sets[is_match])
-    syllables_by_pattern[[pattern]] <- split_after(matching_words, 3L)
-    sets <- sets[!is_match]
-    type_patterns <- type_patterns[!is_match]
-    
-    pattern <- "2c-1v-1c-1v-1c"
-    has_sz <- sapply(sets, function(x) nrow(x) >=3L && x$part[3L] == "ß")
-    is_match <- (type_patterns == pattern & !has_sz)
-    matching_words <- names(sets[is_match])
-    syllables_by_pattern[[pattern]] <- split_after(matching_words, 3L)
-    sets <- sets[!is_match]
-    type_patterns <- type_patterns[!is_match]
-    
-    pattern <- "1c-2v-1c" # Ausnahme: säen
-    has_diphthong <- sapply(sets, function(x) nrow(x) >=2L && is_diphthong(x$part[2L]))
-    which(has_diphthong)
-    is_match <- (type_patterns == pattern & has_diphthong)
-    matching_words <- names(sets[is_match])
-    syllables_by_pattern[[pattern]] <- split_after(matching_words, 0L)
-    sets <- sets[!is_match]
-    type_patterns <- type_patterns[!is_match]
-    
-    #"1c-2v-2c-1v-2c-1v-1c" = 0L, # "mais-kol-ben" "mais-sor-ten" "weib-lic-hen"
-    #"1c-2v-1c" = 0L, # "hier" "säen"
-    
-    split_at <- list(
-      "2v-2c" = 0L,
-      "1c-1v-2c" = 0L,
-      "1c-1v-3c" = 0L,
-      "1c-1v-4c" = 0L,
-      "1c-2v-1c" = 0L, # TODO: except: "le-os"
-      "2c-1v-1c" = 0L,
-      "2c-1v-2c" = 0L,
-      "2c-2v-1c" = 0L,
-      "3c-1v-2c" = 0L,
-      "4c-1v-2c" = 0L,
-      "1v-1c-1v-1c" = 0L,
-      
-      "1v-2c-1v" = 2L,
-      "1v-2c-1v-1c" = 2L,
-      "2v-1c-1v-1c" = 2L,
-      "1c-1v-1c-1v-1c" = 2L,
-      "1c-1v-1c-1v-2c" = 2L,
-      "1c-1v-2c-1v-1c" = 2L, 
-      "1c-1v-3c-1v-2c" = 2L, # TODO: except "wirklich"
-      
-      "1v-2c-1v-3c-1v" = c(2L, 6L),
-      "1c-1v-1c-1v-1c-1v" = c(2L, 4L),
-      "1v-2c-1v-1c-1v-1c" = c(2L, 4L),
-      "1c-1v-1c-1v-2c-1v-1c" = c(2L, 5L), # TODO: exept: her-un-ter
-      "1c-1v-1c-1v-3c-1v-1c" = c(2L, 6L), # TODO: except ko-mi-schen (sch)
-            
-      "1c-2v-1c-1v" = 3L,
-      "2c-1v-1c-1v" = 3L,
-      "2v-2c-1v-1c" = 3L,
-      "1c-1v-1c-2v-1c" = 3L, # TODO: except: ge-fiel
-      "1c-1v-2c-1v-2c" = 3L,
-      "1c-1v-2c-1v-3c" = 3L, # TODO: except "gestärkt"
-      "1c-2v-1c-1v-1c" = 3L,
-      "1c-1v-2c-1v-2c-1v" = c(3L, 6L),  
-      "1c-1v-2c-1v-2c-1v-1c" = c(3L, 6L),
-      
-      "1c-1v-3c-1v" = 4L,
-      "2c-1v-2c-1v" = 4L,
-      "1c-1v-3c-1v-1c" = 4L, # TODO: except: wi-scher (look for sch)
-      "1c-1v-4c-1v-1c" = 4L, # TODO: except "menschen" (sch)
-      "1c-2v-2c-1v-2c" = 4L,
-      "2c-1v-2c-1v-1c" = 4L, # TODO: except ch, ck: kra-chen ste-cken
-      "2c-1v-2c-1v-2c" = 4L,
-      "2c-2v-1c-1v-1c" = 4L,
-      
-      "2c-1v-3c-1v" = 5L,
-      "2c-1v-3c-1v-2c" = 5L, # TODO: except: "früh-stück"
-      "4c-1v-1c-1v-1c" = 5L,
-      
-      "3c-1v-3c-1v" = 6L
-    )
-    
-    for (pattern in names(split_at)) {
-      is_match <- (type_patterns == pattern)
-      matching_words <- names(sets[is_match])
-      if (length(matching_words)) {
-        syllables <- split_after(matching_words, split_at[[pattern]])
-        syllables_by_pattern[[pattern]] <- syllables
-        sets <- sets[!is_match]
-        type_patterns <- type_patterns[!is_match]
-      }
-    }
-  }
-
-  (type_stats <- sort(table(type_patterns)))
-  
-  #"2c-1v-1c-1v", #3, skip sz at 4
-  #"2c-1v-1c-1v" %in% names(type_stats)
-  
-  patterns <- rev(names(type_stats))
-  
-  p <- patterns
-
-  kwb.utils::excludeNULL(lapply(p, function(pattern) {
-    is_match <- (type_patterns == pattern)
-    if (any(is_match)) names(sets[is_match])
-  }))
-  
-  length(unlist(syllables_by_pattern))
-  length(type_patterns)
-  sort(names(sets))
 }
 
 # Download texts ---------------------------------------------------------------
@@ -321,7 +220,7 @@ plot_word_cards <- function(
   }
   
   kwb.utils::toPdf(pdfFile = file, landscape = FALSE, expressions = {
-
+    
     mfrow <- kwb.plot::bestRowColumnSetting(per_page, target.ratio = 0.71)
     
     par(mfrow = mfrow, mar = c(0, 0, 0, 0))
@@ -333,7 +232,7 @@ plot_word_cards <- function(
       # Init empty plot
       plot(0, 0, pch = NA, xlab = "", ylab = "", xaxt = "n", yaxt = "n",
            xlim = c(-1, 1), ylim = c(-1, 1))
-
+      
       if (isTRUE(both_cases)) {
         
         # Write word in lower case      
@@ -445,7 +344,7 @@ correct_article_guesses <- function(article_guesses)
   is_match <- !is.na(i)
   
   article_guesses[is_match] <- corrections[i[is_match]]
-
+  
   article_guesses
 }
 
@@ -491,7 +390,7 @@ replacements_double_consonants <- function()
 }
 
 # split_words -------------------------------------------------------------------
-split_words <- function(words)
+split_words <- function(words, style = 1L)
 {
   word_chars <- stats::setNames(strsplit(tolower(words), ""), words)
   
@@ -509,13 +408,41 @@ split_words <- function(words)
   
   word_data$nchar <- word_data$to - word_data$from + 1L
   
-  type_name <- function(n, type) paste0(n, type) #, ifelse(n > 1L, "s", ""))
-
+  type_name <- function(n, type) {
+    if (style == 1L) {
+      paste0(n, type)
+    } else if (style == 2L) {
+      sapply(n, kwb.utils::repeated, x = type)
+    }
+  }
+  
   word_data$type <- ifelse(
     word_data$value, 
     type_name(word_data$nchar, "v"), 
     type_name(word_data$nchar, "c")
   )
+  
+  parts <- word_data$part
+  
+  i <- which(parts %in% c("ch", "ck", "sch"))
+  word_data$type[i] <- toupper(parts[i])
+  
+  pattern <- "^(.*)(sch)(.*)$"
+  i <- which(grepl(pattern, parts) & word_data$type != "SCH")
+  word_data$type[i] <- to_consonant_sequence_type(parts[i], pattern)
+  
+  pattern <- "^(.*)(ch|ck)(.*)$"
+  i <- which(
+    grepl(pattern, parts) & 
+      !word_data$type %in% c("CH", "CK") & !grepl("SCH", word_data$type)
+  )
+  word_data$type[i] <- to_consonant_sequence_type(parts[i], pattern)
+  
+  i <- which(parts == "ß")
+  word_data$type[i] <- "SZ"
+  
+  i <- which(is_diphthong(parts))
+  word_data$type[i] <- "DT"
   
   word_data %>%
     kwb.utils::removeColumns("value") %>%
@@ -526,6 +453,17 @@ split_words <- function(words)
 is_vowel <- function(chars)
 {
   grepl("[aeiouäöüy]", chars)
+}
+
+# to_consonant_sequence_type ---------------------------------------------------
+to_consonant_sequence_type <- function(x, pattern)
+{
+  abc <- kwb.utils::extractSubstring(pattern, x, 1:3)
+  paste0(
+    ifelse(abc[[1L]] == "", "", sprintf("%dc-", nchar(abc[[1L]]))),
+    toupper(abc[[2L]]),
+    ifelse(abc[[3L]] == "", "", sprintf("-%dc", nchar(abc[[3L]])))
+  )
 }
 
 # split_after ------------------------------------------------------------------
@@ -543,10 +481,15 @@ split_after <- function(x, i)
   
   n_char <- nchar(x)
   
+  #print(x)
+  #print(n_char)
   stopifnot(all(i < n_char))
   
   if (length(i) == 1L) {
-    return(paste0(substr(x, 1L, i), "-", substr(x, i + 1L, n_char)))
+    return(paste0(
+      substr(x, 1L, i), "-", 
+      substr(x, i + 1L, n_char)
+    ))
   }  
   
   if (length(i) == 2L) {
@@ -557,7 +500,26 @@ split_after <- function(x, i)
     ))
   }  
   
-  stop("not implemented")  
+  if (length(i) == 3L) {
+    return(paste0(
+      substr(x, 1L, i[1L]), "-", 
+      substr(x, i[1L] + 1L, i[2L]), "-",
+      substr(x, i[2L] + 1L, i[3L]), "-",
+      substr(x, i[3L] + 1L, n_char)
+    ))
+  }  
+  
+  if (length(i) == 4L) {
+    return(paste0(
+      substr(x, 1L, i[1L]), "-", 
+      substr(x, i[1L] + 1L, i[2L]), "-",
+      substr(x, i[2L] + 1L, i[3L]), "-",
+      substr(x, i[3L] + 1L, i[4L]), "-",
+      substr(x, i[4L] + 1L, n_char)
+    ))
+  }  
+  
+  stop("not implemented: length(i) = ", length(i))  
 }
 
 # is_diphthong -----------------------------------------------------------------
@@ -566,4 +528,360 @@ split_after <- function(x, i)
 is_diphthong <- function(x)
 {
   x %in% c("ei", "au", "äu", "eu", "ai", "oi", "ui.")
+}
+
+# write_lines_utf8 -------------------------------------------------------------
+write_lines_utf8 <- function(x, path)
+{
+  con <- file(path, "wt", encoding = "UTF-8")
+  on.exit(close(con))
+  
+  writeLines(x, con)
+}
+
+# find_syllables ---------------------------------------------------------------
+find_syllables <- function(sets)
+{
+  # Initialise result list
+  syllables_by_pattern <- list()
+  
+  # Create type string representing sequence of consecutive vocals/consonants
+  type_patterns <- sapply(sets, function(set) paste(set$type, collapse = "-"))
+  
+  # Get split positions per type pattern
+  split_at <- get_split_positions_by_pattern()
+
+  # Loop through the type patterns  
+  for (pattern in names(split_at)) {
+    
+    # Which match the current pattern?
+    is_match <- (type_patterns == pattern)
+    
+    if (any(is_match)) {
+      
+      # What are the corresponding words?
+      matching_words <- names(sets[is_match])
+      
+      # Split the word at the positions defined in "split_at"
+      syllables <- split_after(matching_words, split_at[[pattern]])
+
+      # Save the syllables in the result list      
+      syllables_by_pattern[[pattern]] <- syllables
+      
+      # Reduce word list and vector of type patterns
+      sets <- sets[!is_match]
+      type_patterns <- type_patterns[!is_match]
+    }
+  }
+  
+  # Return the result list, setting additional information as attributes
+  structure(
+    syllables_by_pattern,
+    sets = sets,
+    type_patterns = type_patterns
+  )
+}
+
+# get_split_positions_by_pattern -----------------------------------------------
+get_split_positions_by_pattern <- function()
+{
+  # To reorder the list after having added new patterns, copy the output of the
+  # following command below into the body of this function:
+  # cat_ordered_split_positions(get_split_positions_by_pattern())
+  
+  # TODO: handle exceptions
+  # `1c-2v-1c` = 0L, "le-os" 
+  # `1v-2c-1v-1c` = 2L, # "april" 
+  # `1c-1v-3c-1v-2c` = 2L, # "wirklich"
+  # `1c-1v-1c-1v-2c-1v-1c` = c(2L, 5L), # her-un-ter
+  # `1c-1v-1c-1v-3c-1v-1c` = c(2L, 6L), # ko-mi-schen (sch)
+  # `1c-1v-1c-2v-1c` = 3L, # ge-fiel
+  # `1c-1v-2c-1v-3c` = 3L, # "gestärkt"
+  # `1c-1v-3c-1v-1c` = 4L, # wi-scher (look for sch)
+  # `1c-1v-4c-1v-1c` = 4L, # "menschen" (sch)
+  # `2c-1v-2c-1v-1c` = 4L, # ch, ck: kra-chen ste-cken
+  # `2c-1v-3c-1v-2c` = 5L, # "früh-stück"
+  
+  list(
+    `2c-DT` = 0L,
+    `2v-2c` = 0L,
+    `DT-CH` = 0L,
+    `1c-1v-2c` = 0L,
+    `1c-1v-3c` = 0L,
+    `1c-1v-4c` = 0L,
+    `1c-1v-CH` = 0L,
+    `1c-2v-1c` = 0L,
+    `1c-2v-SZ` = 0L,
+    `1c-DT-1c` = 0L,
+    `2c-1v-1c` = 0L,
+    `2c-1v-3c` = 0L,
+    `2c-1v-CK` = 0L,
+    `2c-1v-SZ` = 0L,
+    `2c-2v-1c` = 0L,
+    `2c-DT-1c` = 0L,
+    `3c-1v-2c` = 0L,
+    `4c-1v-1c` = 0L,
+    `4c-1v-2c` = 0L,
+    `4c-1v-3c` = 0L,
+    `4c-1v-CK` = 0L,
+    `1c-1v-SCH` = 0L,
+    `SCH-1v-1c` = 0L,
+    `1c-1v-CH-1c` = 0L,
+    `1c-1v-CH-2c` = 0L,
+    `1v-1c-1v-1c` = 0L,
+    `1v-1c-1v-2c` = 0L,
+    `1c-1v-SCH-1c` = 0L,
+    `SCH-1c-1v-CK-1c` = 0L,
+    `3v-2c` = 2L,
+    `1v-2c-1v` = 2L,
+    `2v-1c-1v` = 2L,
+    `DT-1c-1v` = 2L,
+    `1c-1v-1c-1v` = 2L,
+    `1c-1v-2c-1v` = 3L,
+    `1c-1v-CH-1v` = 2L,
+    `1v-2c-1v-1c` = 2L,
+    `1v-2c-1v-2c` = 2L,
+    `2v-1c-1v-1c` = 2L,
+    `DT-1c-1v-1c` = 2L,
+    `1c-1v-1c-1v-1c` = 2L,
+    `1c-1v-1c-1v-2c` = 2L,
+    `1c-1v-1c-DT-1c` = 2L,
+    `1c-1v-3c-1v-2c` = 3L,
+    `1c-1v-CH-1v-1c` = 2L,
+    `1c-1v-CK-1v-1c` = 2L,
+    `1v-2c-1v-3c-1v` = c(2L, 6L),
+    `1c-1v-1c-1v-1c-1v` = c(2L, 4L),
+    `1v-2c-1v-1c-1v-1c` = c(2L, 4L),
+    `1v-2c-1v-1c-1v-2c` = c(2L, 4L),
+    `1v-2c-1v-1c-DT-1c` = c(2L, 4L),
+    `1v-4c-1v-2c-1v-1c` = c(2L, 7L),
+    `1v-4c-1v-3c-1v-CH` = c(2L, 8L),
+    `1c-1v-1c-1v-2c-1v-1c` = c(2L, 5L),
+    `1c-1v-1c-1v-3c-1v-1c` = c(2L, 6L),
+    `1c-1v-4c-1v-3c-1v-1c` = c(2L, 9L),
+    `1c-1v-CK-1v-2c-DT-1c` = c(2L, 6L),
+    `1c-1v-1c-1v-2c-1v-1c-1v` = c(2L, 5L, 7L),
+    `1c-1v-1c-1v-2c-1v-1c-1v-1c` = c(2L, 5L, 7L),
+    `1c-1v-2c-1v-3c-1v-1c-1v-1c` = c(2L, 7L, 9L),
+    `1c-1v-2c-1v-CH-1c-1v-1c-1v-1c` = c(2L, 7L, 9L),
+    `1c-1v-2c-DT-1c-1v-3c-1v-2c-1v` = c(2L, 6L, 8L, 13L),
+    `1c-3v-2c` = 3L,
+    `1v-3c-1v` = 3L,
+    `1c-2v-1c-1v` = 3L,
+    `1c-3v-4c-2v` = c(3L, 6L),
+    `1c-3v-4c-DT` = c(3L, 6L),
+    `1c-DT-1c-1v` = 3L,
+    `1v-3c-1v-2c` = 3L,
+    `1v-3c-1v-CH` = 3L,
+    `2c-1v-1c-1v` = 3L,
+    `2c-1v-SZ-1v` = 3L,
+    `2v-2c-1v-1c` = 3L,
+    `DT-2c-1v-1c` = 3L,
+    `1c-1v-1c-2v-1c` = 3L,
+    `1c-1v-2c-1v-1c` = 3L,
+    `1c-1v-2c-1v-2c` = 3L,
+    `1c-1v-2c-1v-3c` = 3L,
+    `1c-1v-2c-1v-CH` = 3L,
+    `1c-3v-3c-1v-1c` = c(3L, 6L),
+    `1c-DT-1c-1v-1c` = 3L,
+    `1c-DT-1c-1v-2c` = 3L,
+    `1c-DT-2c-2v-1c` = 3L,
+    `2c-1v-1c-1v-1c` = 3L,
+    `2c-1v-SZ-1v-1c` = 3L,
+    `1c-2v-SCH-1v-1c` = 3L,
+    `1c-1v-2c-1v-2c-1v` = c(3L, 6L),
+    `2v-2c-1v-1c-1v-2c` = c(3L, 5L),
+    `DT-2c-1v-1c-1v-2c` = c(3L, 5L),
+    `1c-1v-1c-SCH-1v-1c` = 4L,
+    `1c-1v-2c-1v-1c-1v-1c` = c(3L, 5L),
+    `1c-1v-2c-1v-2c-1v-1c` = c(3L, 6L),
+    `1c-1v-2c-1v-2c-1v-2c` = c(3L, 6L),
+    `1c-1v-2c-1v-2c-1v-3c` = c(3L, 5L),
+    `1c-1v-2c-1v-2c-1v-CH` = c(3L, 6L),
+    `1c-1v-3c-1v-1c-1v-1c` = c(3L, 6L),
+    `1c-1v-5c-1v-2c-1v-1c` = c(3L, 9L),
+    `1c-1v-4c-2v-1c-1v-1c-1v` = c(3L, 8L, 10L),
+    `2v-2c-1v-3c-1v-2c-1v-1c` = c(3L, 6L, 10L),
+    `DT-2c-1v-3c-1v-2c-1v-1c` = c(3L, 6L, 10L),
+    `1c-1v-2c-1v-2c-1v-2c-1v-1c` = c(3L, 6L, 9L),
+    `1c-1v-2c-1v-4c-1v-2c-1v-1c` = c(3L, 6L, 11L),
+    `1c-2v-1c-1v-1c-1v-2c-1v-1c` = c(3L, 5L, 7L),
+    `1c-2v-2c-1v-2c-1v-1c-1v-1c` = c(3L, 7L, 9L),
+    `1c-DT-1c-1v-1c-1v-CH-1v-1c` = c(3L, 5L, 7L),
+    `1c-1v-1c-SCH-2v-1c-1v-1c-1v` = c(3L, 8L, 10L),
+    `1c-1v-3c-1v` = 4L,
+    `1c-2v-2c-1v` = 4L,
+    `1c-DT-2c-1v` = 4L,
+    `2c-1v-2c-1v` = 4L,
+    `1c-1v-3c-1v-1c` = 4L,
+    `1c-1v-3c-1v-CH` = 4L,
+    `1c-1v-3c-DT-1c` = 4L,
+    `1c-1v-4c-1v-1c` = 4L,
+    `1c-2v-2c-1v-1c` = 4L,
+    `1c-2v-2c-2v-3c` = 4L,
+    `1c-2v-2c-DT-3c` = 4L,
+    `1c-DT-2c-1v-1c` = 4L,
+    `1c-DT-2c-1v-2c` = 4L,
+    `2c-1v-2c-1v-1c` = 4L,
+    `2c-1v-2c-1v-2c` = 4L,
+    `2c-1v-2c-1v-CH` = 4L,
+    `2c-1v-3c-1v-1c` = 4L,
+    `2c-2v-1c-1v-1c` = 4L,
+    `2c-DT-1c-1v-1c` = 4L,
+    `3c-1v-1c-1v-1c` = 4L,
+    `SCH-1v-1c-1v-1c` = 4L,
+    `1c-1v-3c-1v-2c-1v` = c(4L, 7L),
+    `1c-1v-CH-1c-1v-1c` = 4L,
+    `1c-2v-4c-1v-2c-1v` = c(4L, 9L),
+    `1c-DT-4c-1v-2c-1v` = c(4L, 9L),
+    `2c-1v-1c-CH-1v-1c` = 4L,
+    `1c-1v-3c-1v-CH-1v-1c` = c(4L, 6L),
+    `1c-1v-4c-1v-1c-1v-1c` = 4L,
+    `1c-DT-2c-1v-2c-1v-1c` = c(4L, 7L),
+    `1c-DT-2c-1v-CH-1v-1c` = c(4L, 6L),
+    `1c-DT-3c-1v-CK-1v-1c` = c(4L, 7L),
+    `1c-DT-4c-1v-2c-1v-1c` = c(4L, 9L),
+    `1v-1c-1v-2c-1v-2c-1v` = c(4L, 7L),
+    `2c-1v-3c-1v` = 5L,
+    `3c-1v-2c-1v` = 5L,
+    `2c-1v-3c-1v-2c` = 5L,
+    `2c-2v-2c-1v-1c` = 5L,
+    `2c-DT-2c-1v-1c` = 5L,
+    `3c-2v-1c-1v-1c` = 5L,
+    `4c-1v-1c-1v-1c` = 5L,
+    `SCH-DT-1c-1v-1c` = 5L,
+    `1c-1v-4c-1v-1c-1v` = c(5L, 7L),
+    `1c-DT-3c-1v-3c-1v-CH` = c(5L, 9L),
+    `2c-1v-3c-1v-1c-1v-1c` = c(5L, 7L),
+    `1c-DT-3c-1v-CH-1c-1v-CH` = c(5L, 9L),
+    `1v-CK-1v-2c-1v-1c-1v-1c` = c(5L, 7L),
+    `3c-1v-3c-1v` = 6L,
+    `SCH-1v-3c-1v` = 6L,
+    `4c-2v-1c-1v-1c` = 6L,
+    `4c-1v-2c-1v-2c-1v` = c(6L, 9L),
+    `4c-1v-3c-1v-1c` = 7L,
+    "2c-1v-2c" = 0L,
+    "SCH-1c-1v-1c" = 0L,
+    "SCH-1c-1v-2c" = 0L,
+    "SCH-1c-1v-CK" = 0L,
+    "1c-1v-CH-1c-1v" = 4L,
+    "1c-2v-1c-1v-1c" = 3L,
+    "1c-2v-1c-1v-2c" = 3L,
+    "1c-2v-2c-DT-CH-1c" = 4L,
+    "SCH-1c-1v-1c-1v-1c" = 5L,
+    "SCH-1c-2v-1c-1v-1c" = 6L,
+    "SCH-1c-1v-2c-1v-2c-1v" = c(6L, 9L),
+    "SCH-1c-1v-CH-1c-1v-1c" = 7L,
+    "1c-1v-1c-CH-1c-1v-1c-1v" = c(5L, 7L),
+    "1c-1v-1c-SCH-1c-1v-2c-1v-1c" = c(3L, 9L),
+    "1c-1v-SCH-1c-1v-CH-1c-1v-1c" = c(2L, 9L),
+    "1c-1v-2c-1v-1c-SCH-1v-2c-1v-1c" = c(3L, 6L, 11L)
+  )
+}
+
+# cat_ordered_split_positions ------------------------------------------------
+cat_ordered_split_positions <- function(split_at)
+{
+  ordered_indices <- order(
+    sapply(split_at, "[", 1L), 
+    nchar(names(split_at)), 
+    names(split_at)
+  )
+  
+  split_at[ordered_indices] %>%
+    kwb.utils::objectToText() %>%
+    strsplit("\n") %>%
+    do.call(what = c) %>%
+    paste(collapse = " ") %>%
+    kwb.utils::multiSubstitute(list(
+      "\\s{2,}" = " ",
+      ", `" = ",\n  `"
+    )) %>%
+    cat()
+}
+
+# is_true_for_part_at ----------------------------------------------------------
+is_true_for_part_at <- function(x, i, fun, ...) {
+  sapply(x, function(y) nrow(y) >= i && isTRUE(fun(y$part[i], ...)))
+}
+
+has_ch_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ch")
+has_ck_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ck")
+has_sz_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ß")
+has_ch_or_ck_at <- function(x, i) is_true_for_part_at(x, i, `%in%`, c("ch", "ck"))
+has_diphthong_at <- function(x, i) is_true_for_part_at(x, i, is_diphthong)
+
+# prepare_split_assignments_for_non_treated ------------------------------------
+prepare_split_assignments_for_non_treated <- function(x)
+{
+  # Non-handled words with corresponding patterns
+  type_patterns <- kwb.utils::getAttribute(x, "type_patterns") 
+  
+  # Metadata for non-handled words
+  sets <- kwb.utils::getAttribute(x, "sets")
+  
+  # Non-handled patterns, ordered by decreasing frequency
+  patterns <- type_patterns %>%
+    table() %>%
+    sort(decreasing = TRUE) %>%
+    names()
+  
+  if (is.null(patterns)) {
+    return()
+  }
+  
+  # For the non-handled patterns, find the matching words
+  f <- factor(type_patterns, levels = patterns)
+  matches <- split(names(type_patterns), f = f)
+  
+  split_assignments <- sapply(    
+    USE.NAMES = FALSE,
+    X = patterns[order(nchar(patterns), patterns)], 
+    FUN = function(p) {
+      sprintf('"%s" = 0L, # %s', p, paste(matches[[p]], collapse = ","))
+    }
+  )
+
+  file <- "patterns_tmp.txt"
+  
+  kwb.utils::catAndRun(
+    paste0("Writing split position assignments to '", file, "'"),
+    write_lines_utf8(split_assignments, path = file)
+  )
+  
+  file.edit(file)
+}
+
+# create_split_assignments_from_pattern_file -----------------------------------
+create_split_assignments_from_pattern_file <- function(file = "patterns.txt")
+{
+  txt <- kwb.utils::readLinesWithEncoding(file, fileEncoding = "UTF-8")
+  
+  pattern <- "^[^#]+#\\s*"
+  words_by_pattern <- strsplit(gsub(pattern, "", txt), "\\s*,\\s*")
+  
+  pattern <- "(^[^=]+)\\s+= 0L, #(.*)$"
+  index <- c(pattern = 1L, words = 2L)
+  assignment_data <- kwb.utils::extractSubstring(pattern, txt, index)
+  
+  syllable_lengths <- lapply(words_by_pattern, function(x) {
+    positions <- lapply(strsplit(x, "-"), nchar)
+    stopifnot(suppressMessages(kwb.utils::allAreIdentical(positions)))
+    positions[[1L]]
+  })
+  
+  writeLines(sprintf(
+    "%s = %s,", 
+    assignment_data$pattern,
+    sapply(syllable_lengths, function(x) {
+      #x <- split_positions[[1L]]
+      if (length(x) == 1L) {
+        "0L"
+      } else if (length(x) == 2L) {
+        paste0(x[1L], "L")
+      } else {
+        sprintf("c(%s)", paste0(cumsum(x)[-length(x)], "L", collapse = ", "))
+      }
+    })
+  ))
 }
