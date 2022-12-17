@@ -1,5 +1,13 @@
 library(magrittr)
 
+# MAIN: Download texts that are available online -------------------------------
+if (FALSE)
+{
+  text <- read_story_kater_leo_arzt()
+  
+  write_lines_utf8(text, "texts/kater-leo-arzt.txt")
+}
+
 # MAIN: Get raw text -----------------------------------------------------------
 if (FALSE)
 {
@@ -61,16 +69,18 @@ if (FALSE)
   #writeLines(grep("-", words_raw, value = TRUE))
 }
 
-# MAIN: Download texts ---------------------------------------------------------
-if (FALSE)
+# read_story_kater_leo_arzt ----------------------------------------------------
+read_story_kater_leo_arzt <- function()
 {
-  text <- read_story_kater_leo_arzt()
+  html <- rvest::read_html("https://www.zitronenbande.de/kater-leo-arzt/")
   
-  con <- file("texts/kater-leo-arzt.txt", "wt", encoding = "UTF-8")
+  text_lines <- strsplit(rvest::html_text(html), "\n")[[1L]]
   
-  writeLines(text, con)
+  story_line <- grep("aktualisiert", text_lines, value = TRUE)
   
-  close(con)
+  pattern <- "aktualisiert: \\d{2}\\.\\d{2}\\.\\d{4}(.*)$"
+  
+  kwb.utils::extractSubstring(pattern, story_line, 1L)
 }
 
 # read_text --------------------------------------------------------------------
@@ -882,20 +892,6 @@ replacements_double_consonants <- function()
   consonants <- strsplit("bdfglmnprt", "")[[1L]]
   replacements <- as.list(paste0(consonants, "-", consonants, "\\1"))
   stats::setNames(replacements, paste0(consonants, consonants, "(.{1,})$"))
-}
-
-# read_story_kater_leo_arzt ----------------------------------------------------
-read_story_kater_leo_arzt <- function()
-{
-  html <- rvest::read_html("https://www.zitronenbande.de/kater-leo-arzt/")
-  
-  text_lines <- strsplit(rvest::html_text(html), "\n")[[1L]]
-  
-  story_line <- grep("aktualisiert", text_lines, value = TRUE)
-  
-  pattern <- "aktualisiert: \\d{2}\\.\\d{2}\\.\\d{4}(.*)$"
-  
-  kwb.utils::extractSubstring(pattern, story_line, 1L)
 }
 
 # is_true_for_part_at ----------------------------------------------------------
