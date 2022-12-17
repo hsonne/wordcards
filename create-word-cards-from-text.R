@@ -5,7 +5,7 @@ if (FALSE)
 {
   files <- dir("texts", "\\.txt$", full.names = TRUE)
   
-  file <- files[2L]
+  file <- files[3L]
   
   raw_text <- read_text(file)
 }
@@ -46,47 +46,11 @@ if (FALSE)
 if (FALSE)
 {
   # All different words occurring in the text
-  all_words <- sort(unique(tolower(text_to_words(raw_text))))
+  full_words <- sort(unique(tolower(text_to_words(raw_text))))
   
-  # Has a word three or less characters and is thus a syllable?
-  is_syllable <- nchar(all_words) <= 3L
-  
-  # Vector of short words consisting of one syllable
-  short_words <- all_words[is_syllable]
-  
-  # Remaining words, to be split into syllables
-  words <- all_words[!is_syllable]
+  hyphenated_words <- split_into_syllables(full_words)
 
-  # Split words into parts of non-changing type of letter (consonant or vocal)
-  word_data <- split_words(words, style = 1L)
-  #View(word_data)
-  
-  # Split word_data into a set of data frames for each word
-  all_sets <- split(word_data, word_data$word)
-
-  # Identify syllables by going through list of predefined patterns  
-  syllables_by_pattern <- find_syllables(sets = all_sets)
-
-  # Prepare split position assignments for non treated patterns  
-  prepare_split_assignments_for_non_treated(x = syllables_by_pattern)
-
-  # Modify "patterns_tmp.txt" by adding "-" within the words and save as
-  # "patterns.txt"
-  create_split_assignments_from_pattern_file()
-  
-  length(all_words)
-  sorted_syllables <- sort(unname(unlist(syllables_by_pattern)))
-  words_from_syllables <- gsub("-", "", sorted_syllables)
-  length(words_from_syllables)
-  
-  stopifnot(0L == length(
-    setdiff(all_words, c(short_words, words_from_syllables))
-  ))
-  
-  write_lines_utf8(
-    sort(c(short_words, sorted_syllables)), 
-    path = "output/syllables_tmp.txt"
-  )
+  View(data.frame(full_words, hyphenated_words))
 }
 
 # MAIN: Other approaches -------------------------------------------------------
@@ -97,7 +61,7 @@ if (FALSE)
   #writeLines(grep("-", words_raw, value = TRUE))
 }
 
-# Download texts ---------------------------------------------------------------
+# MAIN: Download texts ---------------------------------------------------------
 if (FALSE)
 {
   text <- read_story_kater_leo_arzt()
@@ -107,20 +71,6 @@ if (FALSE)
   writeLines(text, con)
   
   close(con)
-}
-
-# read_story_kater_leo_arzt ----------------------------------------------------
-read_story_kater_leo_arzt <- function()
-{
-  html <- rvest::read_html("https://www.zitronenbande.de/kater-leo-arzt/")
-  
-  text_lines <- strsplit(rvest::html_text(html), "\n")[[1L]]
-  
-  story_line <- grep("aktualisiert", text_lines, value = TRUE)
-  
-  pattern <- "aktualisiert: \\d{2}\\.\\d{2}\\.\\d{4}(.*)$"
-  
-  kwb.utils::extractSubstring(pattern, story_line, 1L)
 }
 
 # read_text --------------------------------------------------------------------
@@ -143,6 +93,65 @@ clean_text <- function(raw_text)
     "[^A-Za-zÄÖÜäöüß]" = ".",
     "[.]+" = " "
   ))
+}
+
+# guess_nouns_with_articles ----------------------------------------------------
+guess_nouns_with_articles <- function(words)
+{
+  i <- which(is_article(words))
+  
+  is_noun <- i < length(words) & words[i + 1L] != tolower(words[i + 1L])
+  
+  j <- i[is_noun]
+  
+  articles <- words[j]
+  
+  nouns <- words[j + 1L]
+  
+  articles_per_noun <- split(tolower(articles), tools::toTitleCase(nouns))
+  
+  article_guesses <- sapply(articles_per_noun, function(x) {
+    names(sort(table(x), decreasing = TRUE))[1L]
+  })
+  
+  article_guesses[order(names(article_guesses))]
+  
+  paste(article_guesses, names(article_guesses))
+}
+
+# is_article -------------------------------------------------------------------
+is_article <- function(word)
+{
+  tolower(word) %in% c("der", "die", "das")
+}
+
+# correct_article_guesses ------------------------------------------------------
+correct_article_guesses <- function(article_guesses)
+{
+  corrections <- c(
+    "die Arbeitsplatte", 
+    "die Arztpraxis", 
+    "die Diele",
+    "die Küche",
+    "die Praxis", 
+    "die Reihe",
+    "die Spitze",
+    "die Spüle", 
+    "die Stube",
+    "die Tulpen", 
+    "die Untersuchung", 
+    "die Zwischenzeit"
+  )
+  
+  get_noun <- function(x) sapply(strsplit(x, " "), "[", 2L)
+  
+  i <- match(get_noun(article_guesses), get_noun(corrections))
+  
+  is_match <- !is.na(i)
+  
+  article_guesses[is_match] <- corrections[i[is_match]]
+  
+  article_guesses
 }
 
 # words_to_word_table ----------------------------------------------------------
@@ -289,104 +298,56 @@ label_nchar <- function(x, type = 2L)
   if (type == 2L) return(sprintf("%d", x))
 }
 
-# guess_nouns_with_articles ----------------------------------------------------
-guess_nouns_with_articles <- function(words)
+# split_into_syllables ---------------------------------------------------------
+split_into_syllables <- function(full_words)
 {
-  i <- which(is_article(words))
+  # Has a word three or less characters and is thus a syllable?
+  is_syllable <- nchar(full_words) <= 3L
   
-  is_noun <- i < length(words) & words[i + 1L] != tolower(words[i + 1L])
+  # Vector of short words consisting of one syllable
+  short_words <- full_words[is_syllable]
   
-  j <- i[is_noun]
+  # Remaining words, to be split into syllables
+  words <- full_words[!is_syllable]
   
-  articles <- words[j]
+  # Split words into parts of non-changing type of letter (consonant or vocal)
+  word_data <- split_words(words, style = 1L)
+  #View(word_data)
   
-  nouns <- words[j + 1L]
+  # Split word_data into a set of data frames for each word
+  all_sets <- split(word_data, word_data$word)
   
-  articles_per_noun <- split(tolower(articles), tools::toTitleCase(nouns))
+  # Identify syllables by going through list of predefined patterns  
+  syllables_by_pattern <- find_syllables(sets = all_sets)
   
-  article_guesses <- sapply(articles_per_noun, function(x) {
-    names(sort(table(x), decreasing = TRUE))[1L]
-  })
-  
-  article_guesses[order(names(article_guesses))]
-  
-  paste(article_guesses, names(article_guesses))
-}
-
-# is_article -------------------------------------------------------------------
-is_article <- function(word)
-{
-  tolower(word) %in% c("der", "die", "das")
-}
-
-# correct_article_guesses ------------------------------------------------------
-correct_article_guesses <- function(article_guesses)
-{
-  corrections <- c(
-    "die Arbeitsplatte", 
-    "die Arztpraxis", 
-    "die Diele",
-    "die Küche",
-    "die Praxis", 
-    "die Reihe",
-    "die Spitze",
-    "die Spüle", 
-    "die Stube",
-    "die Tulpen", 
-    "die Untersuchung", 
-    "die Zwischenzeit"
-  )
-  
-  get_noun <- function(x) sapply(strsplit(x, " "), "[", 2L)
-  
-  i <- match(get_noun(article_guesses), get_noun(corrections))
-  
-  is_match <- !is.na(i)
-  
-  article_guesses[is_match] <- corrections[i[is_match]]
-  
-  article_guesses
-}
-
-# call_hyphenation_service -----------------------------------------------------
-call_hyphenation_service <- function(word)
-{
-  url <- "https://www.silbentrennung24.de/wort/"
-  
-  html <- kwb.utils::catAndRun(
-    paste("Looking up hyphenation for", word),
-    try(rvest::read_html(paste0(url, URLencode(word))))
-  )
-  
-  if (kwb.utils::isTryError(html)) {
-    return(NULL)
+  if (FALSE) {
+    
+    # Prepare split position assignments for non treated patterns  
+    prepare_split_assignments_for_non_treated(x = syllables_by_pattern)
+    
+    # Modify "patterns_tmp.txt" by adding "-" within the words and save as
+    # "patterns.txt"
+    create_split_assignments_from_pattern_file()
   }
   
-  html %>%
-    rvest::html_element(xpath = "//div[@id = 'termresult']") %>%
-    rvest::html_text()  
-}
-
-# get_syllable_replacements ----------------------------------------------------
-get_syllable_replacements <- function()
-{
-  c(
-    "^all[aeiou]"
-    #stats::setNames(as.list(paste0("-", syllables, "-")), syllables),
-    #replacements_double_consonants(),
-    #"^(be)([^ist])" = "\\1-\\2"
-    , "-+" = "-"
-    , "^-" = ""
-    , "-$" = ""
+  sorted_syllables <- sort(unname(unlist(syllables_by_pattern)))
+  
+  stopifnot(0L == length(
+    setdiff(full_words, c(short_words, remove_dashes(sorted_syllables)))
+  ))
+  
+  write_lines_utf8(
+    sort(c(short_words, sorted_syllables)), 
+    path = "output/syllables_tmp.txt"
   )
-}
-
-# replacements_double_consonants -----------------------------------------------
-replacements_double_consonants <- function()
-{
-  consonants <- strsplit("bdfglmnprt", "")[[1L]]
-  replacements <- as.list(paste0(consonants, "-", consonants, "\\1"))
-  stats::setNames(replacements, paste0(consonants, consonants, "(.{1,})$"))
+  
+  result <- full_words
+  
+  i <- match(full_words, remove_dashes(sorted_syllables))
+  
+  result[!is.na(i)] <- sorted_syllables[i[!is.na(i)]]
+  
+  result
 }
 
 # split_words -------------------------------------------------------------------
@@ -466,77 +427,12 @@ to_consonant_sequence_type <- function(x, pattern)
   )
 }
 
-# split_after ------------------------------------------------------------------
-split_after <- function(x, i)
-{
-  stopifnot(is.character(x))
-  
-  if (length(x) > 1L) {
-    return(sapply(x, split_after, i, USE.NAMES = FALSE))
-  }
-  
-  if (length(x) == 0L || all(i == 0L)) {
-    return(x)
-  }
-  
-  n_char <- nchar(x)
-  
-  #print(x)
-  #print(n_char)
-  stopifnot(all(i < n_char))
-  
-  if (length(i) == 1L) {
-    return(paste0(
-      substr(x, 1L, i), "-", 
-      substr(x, i + 1L, n_char)
-    ))
-  }  
-  
-  if (length(i) == 2L) {
-    return(paste0(
-      substr(x, 1L, i[1L]), "-", 
-      substr(x, i[1L] + 1L, i[2L]), "-",
-      substr(x, i[2L] + 1L, n_char)
-    ))
-  }  
-  
-  if (length(i) == 3L) {
-    return(paste0(
-      substr(x, 1L, i[1L]), "-", 
-      substr(x, i[1L] + 1L, i[2L]), "-",
-      substr(x, i[2L] + 1L, i[3L]), "-",
-      substr(x, i[3L] + 1L, n_char)
-    ))
-  }  
-  
-  if (length(i) == 4L) {
-    return(paste0(
-      substr(x, 1L, i[1L]), "-", 
-      substr(x, i[1L] + 1L, i[2L]), "-",
-      substr(x, i[2L] + 1L, i[3L]), "-",
-      substr(x, i[3L] + 1L, i[4L]), "-",
-      substr(x, i[4L] + 1L, n_char)
-    ))
-  }  
-  
-  stop("not implemented: length(i) = ", length(i))  
-}
-
 # is_diphthong -----------------------------------------------------------------
 # Die bekanntesten Schreibungen von Diphthongen im Deutschen sind ei, au, äu und 
 # eu; selten sind ai, oi und ui. 
 is_diphthong <- function(x)
 {
   x %in% c("ei", "au", "äu", "eu", "ai", "oi", "ui.")
-}
-
-# write_lines_utf8 -------------------------------------------------------------
-write_lines_utf8 <- function(x, path)
-{
-  con <- file(path, "wt", encoding = "UTF-8")
-  on.exit(close(con))
-  
-  writeLines(x, con)
 }
 
 # find_syllables ---------------------------------------------------------------
@@ -550,7 +446,7 @@ find_syllables <- function(sets)
   
   # Get split positions per type pattern
   split_at <- get_split_positions_by_pattern()
-
+  
   # Loop through the type patterns  
   for (pattern in names(split_at)) {
     
@@ -564,7 +460,7 @@ find_syllables <- function(sets)
       
       # Split the word at the positions defined in "split_at"
       syllables <- split_after(matching_words, split_at[[pattern]])
-
+      
       # Save the syllables in the result list      
       syllables_by_pattern[[pattern]] <- syllables
       
@@ -800,16 +696,62 @@ cat_ordered_split_positions <- function(split_at)
     cat()
 }
 
-# is_true_for_part_at ----------------------------------------------------------
-is_true_for_part_at <- function(x, i, fun, ...) {
-  sapply(x, function(y) nrow(y) >= i && isTRUE(fun(y$part[i], ...)))
+# split_after ------------------------------------------------------------------
+split_after <- function(x, i)
+{
+  stopifnot(is.character(x))
+  
+  if (length(x) > 1L) {
+    return(sapply(x, split_after, i, USE.NAMES = FALSE))
+  }
+  
+  if (length(x) == 0L || all(i == 0L)) {
+    return(x)
+  }
+  
+  n_char <- nchar(x)
+  
+  #print(x)
+  #print(n_char)
+  stopifnot(all(i < n_char))
+  
+  if (length(i) == 1L) {
+    return(paste0(
+      substr(x, 1L, i), "-", 
+      substr(x, i + 1L, n_char)
+    ))
+  }  
+  
+  if (length(i) == 2L) {
+    return(paste0(
+      substr(x, 1L, i[1L]), "-", 
+      substr(x, i[1L] + 1L, i[2L]), "-",
+      substr(x, i[2L] + 1L, n_char)
+    ))
+  }  
+  
+  if (length(i) == 3L) {
+    return(paste0(
+      substr(x, 1L, i[1L]), "-", 
+      substr(x, i[1L] + 1L, i[2L]), "-",
+      substr(x, i[2L] + 1L, i[3L]), "-",
+      substr(x, i[3L] + 1L, n_char)
+    ))
+  }  
+  
+  if (length(i) == 4L) {
+    return(paste0(
+      substr(x, 1L, i[1L]), "-", 
+      substr(x, i[1L] + 1L, i[2L]), "-",
+      substr(x, i[2L] + 1L, i[3L]), "-",
+      substr(x, i[3L] + 1L, i[4L]), "-",
+      substr(x, i[4L] + 1L, n_char)
+    ))
+  }  
+  
+  stop("not implemented: length(i) = ", length(i))  
 }
 
-has_ch_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ch")
-has_ck_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ck")
-has_sz_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ß")
-has_ch_or_ck_at <- function(x, i) is_true_for_part_at(x, i, `%in%`, c("ch", "ck"))
-has_diphthong_at <- function(x, i) is_true_for_part_at(x, i, is_diphthong)
 
 # prepare_split_assignments_for_non_treated ------------------------------------
 prepare_split_assignments_for_non_treated <- function(x)
@@ -841,7 +783,7 @@ prepare_split_assignments_for_non_treated <- function(x)
       sprintf('"%s" = 0L, # %s', p, paste(matches[[p]], collapse = ","))
     }
   )
-
+  
   file <- "patterns_tmp.txt"
   
   kwb.utils::catAndRun(
@@ -885,3 +827,85 @@ create_split_assignments_from_pattern_file <- function(file = "patterns.txt")
     })
   ))
 }
+
+# write_lines_utf8 -------------------------------------------------------------
+write_lines_utf8 <- function(x, path)
+{
+  con <- file(path, "wt", encoding = "UTF-8")
+  on.exit(close(con))
+  
+  writeLines(x, con)
+}
+
+# remove_dashes ----------------------------------------------------------------
+remove_dashes <- function(x)
+{
+  gsub("-", "", x)
+}
+
+# call_hyphenation_service -----------------------------------------------------
+call_hyphenation_service <- function(word)
+{
+  url <- "https://www.silbentrennung24.de/wort/"
+  
+  html <- kwb.utils::catAndRun(
+    paste("Looking up hyphenation for", word),
+    try(rvest::read_html(paste0(url, URLencode(word))))
+  )
+  
+  if (kwb.utils::isTryError(html)) {
+    return(NULL)
+  }
+  
+  html %>%
+    rvest::html_element(xpath = "//div[@id = 'termresult']") %>%
+    rvest::html_text()  
+}
+
+# get_syllable_replacements ----------------------------------------------------
+get_syllable_replacements <- function()
+{
+  c(
+    "^all[aeiou]"
+    #stats::setNames(as.list(paste0("-", syllables, "-")), syllables),
+    #replacements_double_consonants(),
+    #"^(be)([^ist])" = "\\1-\\2"
+    , "-+" = "-"
+    , "^-" = ""
+    , "-$" = ""
+  )
+}
+
+# replacements_double_consonants -----------------------------------------------
+replacements_double_consonants <- function()
+{
+  consonants <- strsplit("bdfglmnprt", "")[[1L]]
+  replacements <- as.list(paste0(consonants, "-", consonants, "\\1"))
+  stats::setNames(replacements, paste0(consonants, consonants, "(.{1,})$"))
+}
+
+# read_story_kater_leo_arzt ----------------------------------------------------
+read_story_kater_leo_arzt <- function()
+{
+  html <- rvest::read_html("https://www.zitronenbande.de/kater-leo-arzt/")
+  
+  text_lines <- strsplit(rvest::html_text(html), "\n")[[1L]]
+  
+  story_line <- grep("aktualisiert", text_lines, value = TRUE)
+  
+  pattern <- "aktualisiert: \\d{2}\\.\\d{2}\\.\\d{4}(.*)$"
+  
+  kwb.utils::extractSubstring(pattern, story_line, 1L)
+}
+
+# is_true_for_part_at ----------------------------------------------------------
+is_true_for_part_at <- function(x, i, fun, ...) {
+  sapply(x, function(y) nrow(y) >= i && isTRUE(fun(y$part[i], ...)))
+}
+
+has_ch_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ch")
+has_ck_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ck")
+has_sz_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ß")
+has_ch_or_ck_at <- function(x, i) is_true_for_part_at(x, i, `%in%`, c("ch", "ck"))
+has_diphthong_at <- function(x, i) is_true_for_part_at(x, i, is_diphthong)
+
