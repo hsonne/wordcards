@@ -350,7 +350,7 @@ split_into_syllables <- function(full_words)
   sorted_syllables <- sort(unname(unlist(syllables_by_pattern)))
   
   stopifnot(0L == length(
-    setdiff(full_words, c(short_words, remove_dashes(sorted_syllables)))
+    setdiff(full_words, c(short_words, remove_hyphens(sorted_syllables)))
   ))
   
   write_lines_utf8(
@@ -360,7 +360,7 @@ split_into_syllables <- function(full_words)
   
   result <- full_words
   
-  i <- match(full_words, remove_dashes(sorted_syllables))
+  i <- match(full_words, remove_hyphens(sorted_syllables))
   
   result[!is.na(i)] <- sorted_syllables[i[!is.na(i)]]
   
@@ -854,8 +854,8 @@ write_lines_utf8 <- function(x, path)
   writeLines(x, con)
 }
 
-# remove_dashes ----------------------------------------------------------------
-remove_dashes <- function(x)
+# remove_hyphens ---------------------------------------------------------------
+remove_hyphens <- function(x)
 {
   gsub("-", "", x)
 }
