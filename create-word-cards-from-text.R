@@ -11,11 +11,9 @@ if (FALSE)
 # MAIN: Get raw text -----------------------------------------------------------
 if (FALSE)
 {
-  files <- dir("texts", "\\.txt$", full.names = TRUE)
-  
-  file <- files[3L]
-  
-  raw_text <- read_text(file)
+  raw_text <- read_text("die-groesste-getreidepflanze")
+  raw_text <- read_text("hahn-und-huhn")
+  raw_text <- read_text("kater-leo-arzt")
 }
 
 # MAIN: Create word cards ------------------------------------------------------
@@ -84,9 +82,18 @@ read_story_kater_leo_arzt <- function()
 }
 
 # read_text --------------------------------------------------------------------
-read_text <- function(file)
+read_text <- function(name)
 {
-  kwb.utils::readLinesWithEncoding(file, fileEncoding = "UTF-8")
+  list_available_text_files() %>%
+    kwb.utils::selectElements(name) %>%
+    kwb.utils::readLinesWithEncoding(fileEncoding = "UTF-8")
+}
+
+# list_available_text_files ----------------------------------------------------
+list_available_text_files <- function()
+{
+  files <- as.list(dir("texts", "\\.txt$", full.names = TRUE))
+  stats::setNames(files, kwb.utils::removeExtension(basename(unlist(files))))
 }
 
 # text_to_words ----------------------------------------------------------------
