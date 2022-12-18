@@ -11,9 +11,11 @@ if (FALSE)
 # MAIN: Get raw text -----------------------------------------------------------
 if (FALSE)
 {
-  raw_text <- read_text("die-groesste-getreidepflanze")
-  raw_text <- read_text("hahn-und-huhn")
-  raw_text <- read_text("kater-leo-arzt")
+  name <- "die-groesste-getreidepflanze"
+  name <- "hahn-und-huhn"
+  name <- "kater-leo-arzt"
+  
+  raw_text <- read_text(name)
 }
 
 # MAIN: Create word cards ------------------------------------------------------
@@ -25,17 +27,53 @@ if (FALSE)
   articles <- correct_article_guesses(article_guesses)
   writeLines(articles)
   
-  #word_table_lower <- words_to_word_table(words)
-  
-  word_table_original <- words_to_word_table(words, to_lower = FALSE)
-  word_table <- aggregate_lower_upper_case(word_table_original)
+  word_table <- words %>%
+    words_to_word_table(to_lower = FALSE) %>%
+    aggregate_lower_upper_case()
   
   #View(word_table)
-  #View(word_table_original)
+
+  hyphenated <- hyphenate(word_table$word)
+  
+  syllables_in_words <- lapply(hyphenated, split_hyphenated, hyphen = "-")
+
+  syllable_counts <- unlist(lapply(
+    seq_along(syllables_in_words),
+    function(i) table(syllables_in_words[[i]]) * word_table$frequency[i]
+  ))
+  
+  syllable_counts
+  
+  result <- syllable_counts %>%
+    split(tolower(remove_hyphens(names(syllable_counts)))) %>%
+    lapply(function(y) {
+      #y <- x[[5]]
+      z <- aggregate(y, by = list(names(y)), sum)
+      sort(stats::setNames(z[[2]], z[[1]]), decreasing = TRUE)
+    })
+  
+  # z <- result$an
+  # writeLines(names(z))
+  # sprintf("%d (%s)", sum(z), paste(z, collapse = "+"))
+  # 
+  # %>% 
+  #   lapply(function(x) {
+  #     table
+  #   })
+  
+  #%>%
+  #  sort(decreasing = TRUE)
+  
+  word_table <- data.frame(
+    nchar = nchar(names(syllable_counts)),
+    word = names(syllable_counts),
+    frequency = unname(syllable_counts)
+  )
   
   kwb.utils::createDirectory("output")
   
-  name <- kwb.utils::removeExtension(basename(file))
+  #name <- kwb.utils::removeExtension(basename(file))
+  name <- paste0(name, "_syllables")
   
   plot_word_cards(
     word_table$word, 
@@ -230,23 +268,12 @@ aggregate_lower_upper_case <- function(word_table)
 # plot_word_cards --------------------------------------------------------------
 plot_word_cards <- function(
     words,
+    frequencies = NULL,
     file = NULL,
     per_page = 32L, 
-    cex = 2, 
-    y = 0.3, 
-    plot_rank = TRUE,
-    plot_nchar = TRUE,
-    frequencies = NULL,
-    both_cases = TRUE,
-    label_types = c(1L, 1L, 1L)
+    ...
 )
 {
-  text_if <- function(condition, x, text, y = -0.9) {
-    if (isTRUE(condition)) {
-      text(x, y, text)
-    }
-  }
-  
   kwb.utils::toPdf(pdfFile = file, landscape = FALSE, expressions = {
     
     mfrow <- kwb.plot::bestRowColumnSetting(per_page, target.ratio = 0.71)
@@ -254,46 +281,80 @@ plot_word_cards <- function(
     par(mfrow = mfrow, mar = c(0, 0, 0, 0))
     
     for (i in seq_along(words)) {
-      
+  
       word <- words[i]
       
-      # Init empty plot
-      plot(0, 0, pch = NA, xlab = "", ylab = "", xaxt = "n", yaxt = "n",
-           xlim = c(-1, 1), ylim = c(-1, 1))
-      
-      if (isTRUE(both_cases)) {
-        
-        # Write word in lower case      
-        text(0, y, word, cex = cex)
-        
-        # Write word in upper case
-        text(0, -y, to_upper_case(word), cex = cex)
-        
+      if (is.null(frequencies)) {
+        plot_word_card(word, i, freq = NULL, ...)
       } else {
-        
-        # Write word in original case
-        text(0, 0, word, cex = cex)
+        plot_word_card(word, i, freq = frequencies[i], ...)
       }
-      
-      text_if(
-        isTRUE(plot_rank), 
-        x = -0.9, 
-        text = label_rank(i, label_types[1L])
-      )
-      
-      text_if(
-        condition = !is.null(frequencies), 
-        x = 0, 
-        text = label_times(frequencies[i], label_types[2L])
-      )
-      
-      text_if(
-        condition = isTRUE(plot_nchar), 
-        x = 0.9, 
-        text = label_nchar(nchar(word), label_types[3L])
-      )
     }
   })
+}
+
+# plot_word_card ---------------------------------------------------------------
+plot_word_card <- function(
+    word, 
+    i,
+    freq = NULL,
+    cex = 2, 
+    y = 0.3, 
+    plot_rank = TRUE,
+    plot_nchar = TRUE,
+    both_cases = TRUE,
+    label_types = c(1L, 1L, 1L)
+)
+{
+  texts <- if (isTRUE(both_cases)) {
+    # Write word in lower case and upper case
+    c(word, to_upper_case(word))
+  } else {
+    # Write word in original case
+    word
+  }
+  
+  footer <- c(
+    if (isTRUE(plot_rank)) label_rank(i, label_types[1L]) else NA,
+    if (!is.null(freq)) label_times(freq, label_types[2L]) else NA,
+    if (isTRUE(plot_nchar)) label_nchar(nchar(word)) else label_types[3L]
+  )
+  
+  plot_card(texts, footer, cex = cex)
+}
+
+# plot_card --------------------------------------------------------------------
+plot_card <- function(
+    texts, footer = c(NA, NA, NA), ylim = c(-1, 1), squeeze = 0.3, cex = 1, 
+    cex.footer = 1
+)
+{
+  text_footer <- function(text, x, y = -0.9) {
+    if (!is.na(text)) {
+      text(x, y, text, cex = cex.footer)
+    }
+  }
+  
+  # Init empty plot
+  plot(0, 0, pch = NA, xlab = "", ylab = "", xaxt = "n", yaxt = "n",
+       xlim = c(-1, 1), ylim = c(-1, 1))
+  
+  y <- positions_between(length(texts), squeeze * ylim)
+  text(0, rev(y), texts, cex = cex)
+  
+  text_footer(footer[1L], x = -0.9)
+  text_footer(footer[2L], x =  0.0)
+  text_footer(footer[3L], x = +0.9)
+}
+
+# positions_between ------------------------------------------------------------
+positions_between <- function(n, limits = c(-1, 1))
+{
+  if (n == 1L) {
+    mean(limits)
+  } else {
+    seq(limits[1L], by = diff(limits)/(n - 1), length.out = n)
+  }
 }
 
 # label_rank -------------------------------------------------------------------
@@ -940,6 +1001,32 @@ has_sz_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ß")
 has_ch_or_ck_at <- function(x, i) is_true_for_part_at(x, i, `%in%`, c("ch", "ck"))
 has_diphthong_at <- function(x, i) is_true_for_part_at(x, i, is_diphthong)
 
+
+# split_hyphenated -------------------------------------------------------------
+split_hyphenated <- function(x, hyphen = "")
+{
+  stopifnot(length(x) == 1L)
+
+  parts <- strsplit(x, "-")[[1L]]
+  
+  if (hyphen == "" || length(parts) == 1L) {
+    return(parts)
+  }
+  
+  add_hyphens(parts, hyphen)
+}
+
+# add_hyphens ------------------------------------------------------------------
+add_hyphens <- function(x, hyphen = "-")
+{
+  except_last <- -length(x)
+  except_first <- -1L
+  
+  x[except_last] <- paste0(x[except_last], hyphen)
+  x[except_first] <- paste0(hyphen, x[except_first])
+  
+  x
+}
 
 # to_upper_case ----------------------------------------------------------------
 to_upper_case <- function(x)
