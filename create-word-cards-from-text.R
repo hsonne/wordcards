@@ -460,11 +460,16 @@ is_vowel <- function(chars)
 # to_consonant_sequence_type ---------------------------------------------------
 to_consonant_sequence_type <- function(x, pattern)
 {
-  abc <- kwb.utils::extractSubstring(pattern, x, 1:3)
+  before_within_after <- kwb.utils::extractSubstring(pattern, x, 1:3)
+  
+  before <- before_within_after[[1L]]
+  within <- before_within_after[[2L]]
+  after <- before_within_after[[3L]]
+  
   paste0(
-    ifelse(abc[[1L]] == "", "", sprintf("%dc-", nchar(abc[[1L]]))),
-    toupper(abc[[2L]]),
-    ifelse(abc[[3L]] == "", "", sprintf("-%dc", nchar(abc[[3L]])))
+    ifelse(before == "", "", sprintf("%dc-", nchar(before))),
+    toupper(within),
+    ifelse(after == "", "", sprintf("-%dc", nchar(after)))
   )
 }
 
