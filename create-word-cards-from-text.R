@@ -20,7 +20,7 @@ if (FALSE)
 if (FALSE)
 {
   words <- text_to_words(raw_text)
-  
+
   article_guesses <- guess_nouns_with_articles(words)
   articles <- correct_article_guesses(article_guesses)
   writeLines(articles)
@@ -53,7 +53,7 @@ if (FALSE)
 {
   # All different words occurring in the text
   full_words <- sort(unique(tolower(text_to_words(raw_text))))
-  
+
   hyphenated_words <- split_into_syllables(full_words)
 
   View(data.frame(full_words, hyphenated_words))
@@ -125,7 +125,7 @@ guess_nouns_with_articles <- function(words)
   
   nouns <- words[j + 1L]
   
-  articles_per_noun <- split(tolower(articles), tools::toTitleCase(nouns))
+  articles_per_noun <- split(tolower(articles), to_upper_case(nouns))
   
   article_guesses <- sapply(articles_per_noun, function(x) {
     names(sort(table(x), decreasing = TRUE))[1L]
@@ -265,7 +265,7 @@ plot_word_cards <- function(
         text(0, y, word, cex = cex)
         
         # Write word in upper case
-        text(0, -y, tools::toTitleCase(word), cex = cex)
+        text(0, -y, to_upper_case(word), cex = cex)
         
       } else {
         
@@ -912,3 +912,12 @@ has_sz_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ß")
 has_ch_or_ck_at <- function(x, i) is_true_for_part_at(x, i, `%in%`, c("ch", "ck"))
 has_diphthong_at <- function(x, i) is_true_for_part_at(x, i, is_diphthong)
 
+
+# to_upper_case ----------------------------------------------------------------
+to_upper_case <- function(x)
+{
+  x %>%
+    strsplit("") %>%
+    lapply(function(y) `[<-`(y, 1L, toupper(y[1L]))) %>%
+    sapply(paste0, collapse = "")
+}
