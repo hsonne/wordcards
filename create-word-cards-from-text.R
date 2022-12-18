@@ -51,12 +51,15 @@ if (FALSE)
 # MAIN: Find syllables ---------------------------------------------------------
 if (FALSE)
 {
+  words <- text_to_words(raw_text)
+  
   # All different words occurring in the text
-  full_words <- sort(unique(tolower(text_to_words(raw_text))))
+  unique_words <- sort(unique(words))
 
-  hyphenated_words <- split_into_syllables(full_words)
+  # Split the words at syllables (keeping upper/lower case)
+  hyphenated <- hyphenate(unique_words)
 
-  View(data.frame(full_words, hyphenated_words))
+  View(data.frame(unique_words, hyphenated))
 }
 
 # MAIN: Other approaches -------------------------------------------------------
@@ -313,6 +316,27 @@ label_nchar <- function(x, type = 2L)
 {
   if (type == 1L) return(sprintf("%der", x))
   if (type == 2L) return(sprintf("%d", x))
+}
+
+# hyphenate --------------------------------------------------------------------
+hyphenate <- function(x)
+{
+  lower_case_x <- tolower(x)
+  
+  # For performance reasons, split only unique lower case words
+  hyphenated <- split_into_syllables(unique(lower_case_x))
+
+  # Initialise result vector with lower case hyphenated versions of words in x
+  indices <- match(lower_case_x, remove_hyphens(hyphenated))
+  stopifnot(all(!is.na(indices)))
+  result <- hyphenated[indices]
+  
+  # Restore original case
+  is_upper <- is_upper_case(x)
+  result[is_upper] <- to_upper_case(result[is_upper])
+  
+  # Return result vector
+  result
 }
 
 # split_into_syllables ---------------------------------------------------------
@@ -920,4 +944,11 @@ to_upper_case <- function(x)
     strsplit("") %>%
     lapply(function(y) `[<-`(y, 1L, toupper(y[1L]))) %>%
     sapply(paste0, collapse = "")
+}
+
+# is_upper_case ----------------------------------------------------------------
+is_upper_case <- function(x)
+{
+  chars <- strsplit(x, "")
+  sapply(chars, function(y) y[1L] == toupper(y[[1L]]))
 }
