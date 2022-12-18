@@ -208,24 +208,23 @@ order_by_frequency_and_word <- function(data)
 # aggregate_lower_upper_case ---------------------------------------------------
 aggregate_lower_upper_case <- function(word_table)
 {
-  lower_words <- tolower(word_table$word)
+  result <- word_table %>%
+    dplyr::group_by(nchar, tolower(word)) %>%
+    dplyr::summarise(
+      n_lower = sum(frequency[!is_upper_case(word)]),
+      n_upper = sum(frequency[is_upper_case(word)]),
+      frequency = n_lower + n_upper,
+      .groups = "drop"
+    ) %>%
+    dplyr::rename(word = "tolower(word)")
   
-  i <- which(duplicated(lower_words))  
+  no_lower <- result$n_lower == 0L
+  result$word[no_lower] <- to_upper_case(result$word[no_lower])
   
-  if (length(i) == 0L) {
-    return(word_table)
-  }
-  
-  j <- which(lower_words %in% lower_words[i])
-  
-  data <- word_table[j, ]
-  data$word <- tolower(data$word)
-  
-  lower_upper_stats <- aggregate(frequency ~ nchar + word, data = data, sum)
-  
-  word_table <- rbind(word_table[-j, ], lower_upper_stats)
-  
-  order_by_frequency_and_word(word_table)
+  result %>%
+    as.data.frame() %>%
+    order_by_frequency_and_word() %>%
+    kwb.utils::moveColumnsToFront(c("nchar", "word", "frequency"))
 }
 
 # plot_word_cards --------------------------------------------------------------
