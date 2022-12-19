@@ -335,9 +335,7 @@ plot_card <- function(
     }
   }
   
-  # Init empty plot
-  plot(0, 0, pch = NA, xlab = "", ylab = "", xaxt = "n", yaxt = "n",
-       xlim = c(-1, 1), ylim = c(-1, 1))
+  init_empty_plot()
   
   y <- positions_between(length(texts), squeeze * ylim)
   text(0, rev(y), texts, cex = cex)
@@ -345,6 +343,16 @@ plot_card <- function(
   text_footer(footer[1L], x = -0.9)
   text_footer(footer[2L], x =  0.0)
   text_footer(footer[3L], x = +0.9)
+}
+
+# init_empty_plot --------------------------------------------------------------
+init_empty_plot <- function(xlim = c(-1, 1), ylim = c(-1, 1)
+)
+{
+  plot(
+    0, 0, pch = NA, xlab = "", ylab = "", xaxt = "n", yaxt = "n",
+    xlim = xlim, ylim = ylim
+  )
 }
 
 # positions_between ------------------------------------------------------------
