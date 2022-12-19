@@ -1,4 +1,10 @@
 library(magrittr)
+# MAIN: Save split positions to yaml file --------------------------------------
+if (FALSE)
+{
+  split_positions <- get_split_positions_by_pattern()
+  yaml::write_yaml(split_positions, "split-positions.yml")
+}
 
 # MAIN: Download texts that are available online -------------------------------
 if (FALSE)
@@ -609,193 +615,33 @@ get_split_positions_by_pattern <- function()
   # `2c-1v-2c-1v-1c` = 4L, # ch, ck: kra-chen ste-cken
   # `2c-1v-3c-1v-2c` = 5L, # "früh-stück"
   
-  list(
-    `2c-DT` = 0L,
-    `2v-2c` = 0L,
-    `DT-CH` = 0L,
-    `1c-1v-2c` = 0L,
-    `1c-1v-3c` = 0L,
-    `1c-1v-4c` = 0L,
-    `1c-1v-CH` = 0L,
-    `1c-2v-1c` = 0L,
-    `1c-2v-SZ` = 0L,
-    `1c-DT-1c` = 0L,
-    `2c-1v-1c` = 0L,
-    `2c-1v-3c` = 0L,
-    `2c-1v-CK` = 0L,
-    `2c-1v-SZ` = 0L,
-    `2c-2v-1c` = 0L,
-    `2c-DT-1c` = 0L,
-    `3c-1v-2c` = 0L,
-    `4c-1v-1c` = 0L,
-    `4c-1v-2c` = 0L,
-    `4c-1v-3c` = 0L,
-    `4c-1v-CK` = 0L,
-    `1c-1v-SCH` = 0L,
-    `SCH-1v-1c` = 0L,
-    `1c-1v-CH-1c` = 0L,
-    `1c-1v-CH-2c` = 0L,
-    `1v-1c-1v-1c` = 0L,
-    `1v-1c-1v-2c` = 0L,
-    `1c-1v-SCH-1c` = 0L,
-    `SCH-1c-1v-CK-1c` = 0L,
-    `3v-2c` = 2L,
-    `1v-2c-1v` = 2L,
-    `2v-1c-1v` = 2L,
-    `DT-1c-1v` = 2L,
-    `1c-1v-1c-1v` = 2L,
-    `1c-1v-2c-1v` = 3L,
-    `1c-1v-CH-1v` = 2L,
-    `1v-2c-1v-1c` = 2L,
-    `1v-2c-1v-2c` = 2L,
-    `2v-1c-1v-1c` = 2L,
-    `DT-1c-1v-1c` = 2L,
-    `1c-1v-1c-1v-1c` = 2L,
-    `1c-1v-1c-1v-2c` = 2L,
-    `1c-1v-1c-DT-1c` = 2L,
-    `1c-1v-3c-1v-2c` = 3L,
-    `1c-1v-CH-1v-1c` = 2L,
-    `1c-1v-CK-1v-1c` = 2L,
-    `1v-2c-1v-3c-1v` = c(2L, 6L),
-    `1c-1v-1c-1v-1c-1v` = c(2L, 4L),
-    `1v-2c-1v-1c-1v-1c` = c(2L, 4L),
-    `1v-2c-1v-1c-1v-2c` = c(2L, 4L),
-    `1v-2c-1v-1c-DT-1c` = c(2L, 4L),
-    `1v-4c-1v-2c-1v-1c` = c(2L, 7L),
-    `1v-4c-1v-3c-1v-CH` = c(2L, 8L),
-    `1c-1v-1c-1v-2c-1v-1c` = c(2L, 5L),
-    `1c-1v-1c-1v-3c-1v-1c` = c(2L, 6L),
-    `1c-1v-4c-1v-3c-1v-1c` = c(2L, 9L),
-    `1c-1v-CK-1v-2c-DT-1c` = c(2L, 6L),
-    `1c-1v-1c-1v-2c-1v-1c-1v` = c(2L, 5L, 7L),
-    `1c-1v-1c-1v-2c-1v-1c-1v-1c` = c(2L, 5L, 7L),
-    `1c-1v-2c-1v-3c-1v-1c-1v-1c` = c(2L, 7L, 9L),
-    `1c-1v-2c-1v-CH-1c-1v-1c-1v-1c` = c(2L, 7L, 9L),
-    `1c-1v-2c-DT-1c-1v-3c-1v-2c-1v` = c(2L, 6L, 8L, 13L),
-    `1c-3v-2c` = 3L,
-    `1v-3c-1v` = 3L,
-    `1c-2v-1c-1v` = 3L,
-    `1c-3v-4c-2v` = c(3L, 6L),
-    `1c-3v-4c-DT` = c(3L, 6L),
-    `1c-DT-1c-1v` = 3L,
-    `1v-3c-1v-2c` = 3L,
-    `1v-3c-1v-CH` = 3L,
-    `2c-1v-1c-1v` = 3L,
-    `2c-1v-SZ-1v` = 3L,
-    `2v-2c-1v-1c` = 3L,
-    `DT-2c-1v-1c` = 3L,
-    `1c-1v-1c-2v-1c` = 3L,
-    `1c-1v-2c-1v-1c` = 3L,
-    `1c-1v-2c-1v-2c` = 3L,
-    `1c-1v-2c-1v-3c` = 3L,
-    `1c-1v-2c-1v-CH` = 3L,
-    `1c-3v-3c-1v-1c` = c(3L, 6L),
-    `1c-DT-1c-1v-1c` = 3L,
-    `1c-DT-1c-1v-2c` = 3L,
-    `1c-DT-2c-2v-1c` = 3L,
-    `2c-1v-1c-1v-1c` = 3L,
-    `2c-1v-SZ-1v-1c` = 3L,
-    `1c-2v-SCH-1v-1c` = 3L,
-    `1c-1v-2c-1v-2c-1v` = c(3L, 6L),
-    `2v-2c-1v-1c-1v-2c` = c(3L, 5L),
-    `DT-2c-1v-1c-1v-2c` = c(3L, 5L),
-    `1c-1v-1c-SCH-1v-1c` = 4L,
-    `1c-1v-2c-1v-1c-1v-1c` = c(3L, 5L),
-    `1c-1v-2c-1v-2c-1v-1c` = c(3L, 6L),
-    `1c-1v-2c-1v-2c-1v-2c` = c(3L, 6L),
-    `1c-1v-2c-1v-2c-1v-3c` = c(3L, 5L),
-    `1c-1v-2c-1v-2c-1v-CH` = c(3L, 6L),
-    `1c-1v-3c-1v-1c-1v-1c` = c(3L, 6L),
-    `1c-1v-5c-1v-2c-1v-1c` = c(3L, 9L),
-    `1c-1v-4c-2v-1c-1v-1c-1v` = c(3L, 8L, 10L),
-    `2v-2c-1v-3c-1v-2c-1v-1c` = c(3L, 6L, 10L),
-    `DT-2c-1v-3c-1v-2c-1v-1c` = c(3L, 6L, 10L),
-    `1c-1v-2c-1v-2c-1v-2c-1v-1c` = c(3L, 6L, 9L),
-    `1c-1v-2c-1v-4c-1v-2c-1v-1c` = c(3L, 6L, 11L),
-    `1c-2v-1c-1v-1c-1v-2c-1v-1c` = c(3L, 5L, 7L),
-    `1c-2v-2c-1v-2c-1v-1c-1v-1c` = c(3L, 7L, 9L),
-    `1c-DT-1c-1v-1c-1v-CH-1v-1c` = c(3L, 5L, 7L),
-    `1c-1v-1c-SCH-2v-1c-1v-1c-1v` = c(3L, 8L, 10L),
-    `1c-1v-3c-1v` = 4L,
-    `1c-2v-2c-1v` = 4L,
-    `1c-DT-2c-1v` = 4L,
-    `2c-1v-2c-1v` = 4L,
-    `1c-1v-3c-1v-1c` = 4L,
-    `1c-1v-3c-1v-CH` = 4L,
-    `1c-1v-3c-DT-1c` = 4L,
-    `1c-1v-4c-1v-1c` = 4L,
-    `1c-2v-2c-1v-1c` = 4L,
-    `1c-2v-2c-2v-3c` = 4L,
-    `1c-2v-2c-DT-3c` = 4L,
-    `1c-DT-2c-1v-1c` = 4L,
-    `1c-DT-2c-1v-2c` = 4L,
-    `2c-1v-2c-1v-1c` = 4L,
-    `2c-1v-2c-1v-2c` = 4L,
-    `2c-1v-2c-1v-CH` = 4L,
-    `2c-1v-3c-1v-1c` = 4L,
-    `2c-2v-1c-1v-1c` = 4L,
-    `2c-DT-1c-1v-1c` = 4L,
-    `3c-1v-1c-1v-1c` = 4L,
-    `SCH-1v-1c-1v-1c` = 4L,
-    `1c-1v-3c-1v-2c-1v` = c(4L, 7L),
-    `1c-1v-CH-1c-1v-1c` = 4L,
-    `1c-2v-4c-1v-2c-1v` = c(4L, 9L),
-    `1c-DT-4c-1v-2c-1v` = c(4L, 9L),
-    `2c-1v-1c-CH-1v-1c` = 4L,
-    `1c-1v-3c-1v-CH-1v-1c` = c(4L, 6L),
-    `1c-1v-4c-1v-1c-1v-1c` = 4L,
-    `1c-DT-2c-1v-2c-1v-1c` = c(4L, 7L),
-    `1c-DT-2c-1v-CH-1v-1c` = c(4L, 6L),
-    `1c-DT-3c-1v-CK-1v-1c` = c(4L, 7L),
-    `1c-DT-4c-1v-2c-1v-1c` = c(4L, 9L),
-    `1v-1c-1v-2c-1v-2c-1v` = c(4L, 7L),
-    `2c-1v-3c-1v` = 5L,
-    `3c-1v-2c-1v` = 5L,
-    `2c-1v-3c-1v-2c` = 5L,
-    `2c-2v-2c-1v-1c` = 5L,
-    `2c-DT-2c-1v-1c` = 5L,
-    `3c-2v-1c-1v-1c` = 5L,
-    `4c-1v-1c-1v-1c` = 5L,
-    `SCH-DT-1c-1v-1c` = 5L,
-    `1c-1v-4c-1v-1c-1v` = c(5L, 7L),
-    `1c-DT-3c-1v-3c-1v-CH` = c(5L, 9L),
-    `2c-1v-3c-1v-1c-1v-1c` = c(5L, 7L),
-    `1c-DT-3c-1v-CH-1c-1v-CH` = c(5L, 9L),
-    `1v-CK-1v-2c-1v-1c-1v-1c` = c(5L, 7L),
-    `3c-1v-3c-1v` = 6L,
-    `SCH-1v-3c-1v` = 6L,
-    `4c-2v-1c-1v-1c` = 6L,
-    `4c-1v-2c-1v-2c-1v` = c(6L, 9L),
-    `4c-1v-3c-1v-1c` = 7L,
-    "2c-1v-2c" = 0L,
-    "SCH-1c-1v-1c" = 0L,
-    "SCH-1c-1v-2c" = 0L,
-    "SCH-1c-1v-CK" = 0L,
-    "1c-1v-CH-1c-1v" = 4L,
-    "1c-2v-1c-1v-1c" = 3L,
-    "1c-2v-1c-1v-2c" = 3L,
-    "1c-2v-2c-DT-CH-1c" = 4L,
-    "SCH-1c-1v-1c-1v-1c" = 5L,
-    "SCH-1c-2v-1c-1v-1c" = 6L,
-    "SCH-1c-1v-2c-1v-2c-1v" = c(6L, 9L),
-    "SCH-1c-1v-CH-1c-1v-1c" = 7L,
-    "1c-1v-1c-CH-1c-1v-1c-1v" = c(5L, 7L),
-    "1c-1v-1c-SCH-1c-1v-2c-1v-1c" = c(3L, 9L),
-    "1c-1v-SCH-1c-1v-CH-1c-1v-1c" = c(2L, 9L),
-    "1c-1v-2c-1v-1c-SCH-1v-2c-1v-1c" = c(3L, 6L, 11L)
-  )
+  yaml::read_yaml(kwb.utils::safePath("split-positions.yml"))
 }
 
-# cat_ordered_split_positions ------------------------------------------------
+# cat_ordered_split_positions --------------------------------------------------
 cat_ordered_split_positions <- function(split_at)
 {
-  ordered_indices <- order(
+  split_at %>%
+    order_split_positions() %>%
+    cat_split_positions()
+}
+
+# order_split_positions --------------------------------------------------------
+order_split_positions <- function(split_at)
+{
+  indices <- order(
     sapply(split_at, "[", 1L), 
     nchar(names(split_at)), 
     names(split_at)
   )
   
-  split_at[ordered_indices] %>%
+  split_at[indices]
+}
+
+# cat_split_positions ----------------------------------------------------------
+cat_split_positions <- function(x)
+{
+  x %>%
     kwb.utils::objectToText() %>%
     strsplit("\n") %>%
     do.call(what = c) %>%
