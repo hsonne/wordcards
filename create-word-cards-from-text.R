@@ -807,57 +807,23 @@ split_after <- function(x, i)
 {
   stopifnot(is.character(x))
   
-  if (length(x) > 1L) {
-    return(sapply(x, split_after, i, USE.NAMES = FALSE))
-  }
-  
   if (length(x) == 0L || all(i == 0L)) {
     return(x)
   }
   
   n_char <- nchar(x)
   
-  #print(x)
-  #print(n_char)
   stopifnot(all(i < n_char))
   
-  if (length(i) == 1L) {
-    return(paste0(
-      substr(x, 1L, i), "-", 
-      substr(x, i + 1L, n_char)
-    ))
-  }  
-  
-  if (length(i) == 2L) {
-    return(paste0(
-      substr(x, 1L, i[1L]), "-", 
-      substr(x, i[1L] + 1L, i[2L]), "-",
-      substr(x, i[2L] + 1L, n_char)
-    ))
-  }  
-  
-  if (length(i) == 3L) {
-    return(paste0(
-      substr(x, 1L, i[1L]), "-", 
-      substr(x, i[1L] + 1L, i[2L]), "-",
-      substr(x, i[2L] + 1L, i[3L]), "-",
-      substr(x, i[3L] + 1L, n_char)
-    ))
-  }  
-  
-  if (length(i) == 4L) {
-    return(paste0(
-      substr(x, 1L, i[1L]), "-", 
-      substr(x, i[1L] + 1L, i[2L]), "-",
-      substr(x, i[2L] + 1L, i[3L]), "-",
-      substr(x, i[3L] + 1L, i[4L]), "-",
-      substr(x, i[4L] + 1L, n_char)
-    ))
-  }  
-  
-  stop("not implemented: length(i) = ", length(i))  
-}
+  from <- c(1L, i + 1L)
+  to <- c(i, NA)
 
+  paste_args <- lapply(seq_along(from), function(j) {
+    substr(x, from[j], if (is.na(to[j])) n_char else to[j])
+  })
+  
+  do.call(paste, c(paste_args, sep = "-"))
+}
 
 # prepare_split_assignments_for_non_treated ------------------------------------
 prepare_split_assignments_for_non_treated <- function(x)
