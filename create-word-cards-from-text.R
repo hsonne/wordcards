@@ -543,7 +543,7 @@ to_consonant_sequence_type <- function(x, pattern)
 # eu; selten sind ai, oi und ui. 
 is_diphthong <- function(x)
 {
-  x %in% c("ei", "au", "äu", "eu", "ai", "oi", "ui.")
+  x %in% c("ei", "au", "äu", "eu", "ai", "oi", "ui")
 }
 
 # find_syllables ---------------------------------------------------------------
