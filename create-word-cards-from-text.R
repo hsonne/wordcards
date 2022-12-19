@@ -147,7 +147,7 @@ text_to_words <- function(raw_text)
 clean_text <- function(raw_text)
 {
   kwb.utils::multiSubstitute(raw_text, list(
-    '[“„.,?!:-]' = " ",
+    #'[“„.,?!:-]' = " ",
     "[^A-Za-zÄÖÜäöüß]" = ".",
     "[.]+" = " "
   ))
@@ -346,8 +346,7 @@ plot_card <- function(
 }
 
 # init_empty_plot --------------------------------------------------------------
-init_empty_plot <- function(xlim = c(-1, 1), ylim = c(-1, 1)
-)
+init_empty_plot <- function(xlim = c(-1, 1), ylim = c(-1, 1))
 {
   plot(
     0, 0, pch = NA, xlab = "", ylab = "", xaxt = "n", yaxt = "n",
@@ -389,13 +388,13 @@ label_nchar <- function(x, type = 2L)
 # hyphenate --------------------------------------------------------------------
 hyphenate <- function(x)
 {
-  lower_case_x <- tolower(x)
+  lower_x <- tolower(x)
   
   # For performance reasons, split only unique lower case words
-  hyphenated <- split_into_syllables(unique(lower_case_x))
+  hyphenated <- split_into_syllables(unique(lower_x))
 
   # Initialise result vector with lower case hyphenated versions of words in x
-  indices <- match(lower_case_x, remove_hyphens(hyphenated))
+  indices <- match(lower_x, remove_hyphens(hyphenated))
   stopifnot(all(!is.na(indices)))
   result <- hyphenated[indices]
   
@@ -474,7 +473,7 @@ split_words <- function(words, style = 1L)
   
   word_data <- word_parts %>%
     kwb.utils::rbindAll(nameColumn = "word") %>%
-    kwb.utils::renameColumns(list(starts_at = "from", "ends_at" = "to"))
+    kwb.utils::renameColumns(list(starts_at = "from", ends_at = "to"))
   
   word_data$nchar <- word_data$to - word_data$from + 1L
   
