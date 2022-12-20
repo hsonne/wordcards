@@ -2,7 +2,7 @@ library(magrittr)
 # MAIN: Save split positions to yaml file --------------------------------------
 if (FALSE)
 {
-  split_positions <- get_split_positions_by_pattern()
+  split_positions <- read_split_positions_by_pattern()
   yaml::write_yaml(split_positions, "split-positions.yml")
 }
 
@@ -104,6 +104,14 @@ if (FALSE)
   hyphenated <- hyphenate(x = unique_words)
 
   View(data.frame(unique_words, hyphenated))
+}
+
+# MAIN: Reorder split-positions.yml --------------------------------------------
+if (FALSE)
+{
+  read_split_positions_by_pattern() %>%
+    order_split_positions() %>%
+    write_split_positions_by_pattern()
 }
 
 # MAIN: Other approaches -------------------------------------------------------
@@ -562,7 +570,7 @@ find_syllables <- function(sets)
   type_patterns <- sapply(sets, function(set) paste(set$type, collapse = "-"))
   
   # Get split positions per type pattern
-  split_at <- get_split_positions_by_pattern()
+  split_at <- read_split_positions_by_pattern()
   
   # Loop through the type patterns  
   for (pattern in names(split_at)) {
@@ -595,12 +603,12 @@ find_syllables <- function(sets)
   )
 }
 
-# get_split_positions_by_pattern -----------------------------------------------
-get_split_positions_by_pattern <- function()
+# read_split_positions_by_pattern ----------------------------------------------
+read_split_positions_by_pattern <- function(file = "split-positions.yml")
 {
   # To reorder the list after having added new patterns, copy the output of the
   # following command below into the body of this function:
-  # cat_ordered_split_positions(get_split_positions_by_pattern())
+  # cat_ordered_split_positions(read_split_positions_by_pattern())
   
   # TODO: handle exceptions
   # `1c-2v-1c` = 0L, "le-os" 
@@ -615,7 +623,15 @@ get_split_positions_by_pattern <- function()
   # `2c-1v-2c-1v-1c` = 4L, # ch, ck: kra-chen ste-cken
   # `2c-1v-3c-1v-2c` = 5L, # "früh-stück"
   
-  yaml::read_yaml(kwb.utils::safePath("split-positions.yml"))
+  yaml::read_yaml(kwb.utils::safePath(file))
+}
+
+# write_split_positions_by_pattern ---------------------------------------------
+write_split_positions_by_pattern <- function(
+  split_positions, file = "split-positions.yml"
+)
+{
+  yaml::write_yaml(split_positions, file)
 }
 
 # cat_ordered_split_positions --------------------------------------------------
