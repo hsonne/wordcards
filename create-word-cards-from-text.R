@@ -101,7 +101,7 @@ if (FALSE)
   unique_words <- sort(unique(words))
 
   # Split the words at syllables (keeping upper/lower case)
-  hyphenated <- hyphenate(unique_words)
+  hyphenated <- hyphenate(x = unique_words)
 
   View(data.frame(unique_words, hyphenated))
 }
@@ -397,7 +397,7 @@ hyphenate <- function(x)
   lower_x <- tolower(x)
   
   # For performance reasons, split only unique lower case words
-  hyphenated <- split_into_syllables(unique(lower_x))
+  hyphenated <- split_into_syllables(full_words = unique(lower_x))
 
   # Initialise result vector with lower case hyphenated versions of words in x
   indices <- match(lower_x, remove_hyphens(hyphenated))
@@ -664,7 +664,7 @@ split_after <- function(x, i)
   
   n_char <- nchar(x)
   
-  stopifnot(all(i < n_char))
+  stopifnot(all(i < min(n_char)))
   
   from <- c(1L, i + 1L)
   to <- c(i, NA)
@@ -703,7 +703,7 @@ prepare_split_assignments_for_non_treated <- function(x)
     USE.NAMES = FALSE,
     X = patterns[order(nchar(patterns), patterns)], 
     FUN = function(p) {
-      sprintf('"%s" = 0L, # %s', p, paste(matches[[p]], collapse = ","))
+      sprintf("%s: %s", p, paste(matches[[p]], collapse = ","))
     }
   )
   
@@ -713,42 +713,43 @@ prepare_split_assignments_for_non_treated <- function(x)
     paste0("Writing split position assignments to '", file, "'"),
     write_lines_utf8(split_assignments, path = file)
   )
-  
+
   file.edit(file)
 }
 
 # create_split_assignments_from_pattern_file -----------------------------------
-create_split_assignments_from_pattern_file <- function(file = "patterns.txt")
+create_split_assignments_from_pattern_file <- function(
+    file = "patterns.txt", as_yaml = FALSE
+)
 {
-  txt <- kwb.utils::readLinesWithEncoding(file, fileEncoding = "UTF-8")
+  substring_data <- kwb.utils::extractSubstring(
+    pattern = "(^[^:]+):\\s+(.*)$", # "(^[^=]+)\\s+= 0L, #(.*)$"  
+    x = kwb.utils::readLinesWithEncoding(file, fileEncoding = "UTF-8"), 
+    index = c(pattern = 1L, words = 2L)
+  )
   
-  pattern <- "^[^#]+#\\s*"
-  words_by_pattern <- strsplit(gsub(pattern, "", txt), "\\s*,\\s*")
-  
-  pattern <- "(^[^=]+)\\s+= 0L, #(.*)$"
-  index <- c(pattern = 1L, words = 2L)
-  assignment_data <- kwb.utils::extractSubstring(pattern, txt, index)
-  
-  syllable_lengths <- lapply(words_by_pattern, function(x) {
-    positions <- lapply(strsplit(x, "-"), nchar)
-    stopifnot(suppressMessages(kwb.utils::allAreIdentical(positions)))
-    positions[[1L]]
-  })
-  
-  writeLines(sprintf(
-    "%s = %s,", 
-    assignment_data$pattern,
-    sapply(syllable_lengths, function(x) {
-      #x <- split_positions[[1L]]
-      if (length(x) == 1L) {
-        "0L"
-      } else if (length(x) == 2L) {
-        paste0(x[1L], "L")
-      } else {
-        sprintf("c(%s)", paste0(cumsum(x)[-length(x)], "L", collapse = ", "))
-      }
+  split_positions <- substring_data$words %>%
+    strsplit("\\s*,\\s*") %>%
+    stats::setNames(substring_data$pattern) %>%
+    lapply(function(x) {
+      print(x)
+      positions <- lapply(strsplit(x, "-"), nchar)
+      stopifnot(suppressMessages(kwb.utils::allAreIdentical(positions)))
+      pos <- positions[[1L]]
+      if (length(pos) > 1L) cumsum(pos)[-length(pos)] else 0L
     })
-  ))
+
+  if (as_yaml) {
+    cat(yaml::as.yaml(split_positions))
+    return()
+  }
+  
+  writeLines(sprintf("%s = %s,", names(split_positions), sapply(
+    split_positions, function(x) sprintf(
+      if (length(x) > 1L) "c(%s)" else "%s", 
+      paste0(x, "L", collapse = ", ")
+    )
+  )))
 }
 
 # write_lines_utf8 -------------------------------------------------------------
