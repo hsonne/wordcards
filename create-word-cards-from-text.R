@@ -441,7 +441,7 @@ split_into_syllables <- function(full_words)
     
     # Modify "patterns_tmp.txt" by adding "-" within the words and save as
     # "patterns.txt"
-    create_split_assignments_from_pattern_file()
+    create_split_assignments_from_pattern_file(as_yaml = TRUE)
   }
   
   sorted_syllables <- sort(unname(unlist(syllables_by_pattern)))
@@ -739,17 +739,21 @@ create_split_assignments_from_pattern_file <- function(
       if (length(pos) > 1L) cumsum(pos)[-length(pos)] else 0L
     })
 
-  if (as_yaml) {
-    cat(yaml::as.yaml(split_positions))
-    return()
+  output <- if (as_yaml) {
+    
+    yaml::as.yaml(split_positions)
+    
+  } else {
+    
+    sprintf("%s = %s,", names(split_positions), sapply(
+      split_positions, function(x) sprintf(
+        if (length(x) > 1L) "c(%s)" else "%s", 
+        paste0(x, "L", collapse = ", ")
+      )
+    ))
   }
   
-  writeLines(sprintf("%s = %s,", names(split_positions), sapply(
-    split_positions, function(x) sprintf(
-      if (length(x) > 1L) "c(%s)" else "%s", 
-      paste0(x, "L", collapse = ", ")
-    )
-  )))
+  writeLines(output)
 }
 
 # write_lines_utf8 -------------------------------------------------------------
