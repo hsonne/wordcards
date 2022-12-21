@@ -25,7 +25,7 @@ if (FALSE)
   raw_text <- read_text(name)
 }
 
-# MAIN: Create word cards ------------------------------------------------------
+# MAIN: Guess articles ---------------------------------------------------------
 if (FALSE)
 {
   words <- text_to_words(raw_text)
@@ -33,6 +33,12 @@ if (FALSE)
   article_guesses <- guess_nouns_with_articles(words)
   articles <- correct_article_guesses(article_guesses)
   writeLines(articles)
+}
+
+# MAIN: Create word cards ------------------------------------------------------
+if (FALSE)
+{
+  words <- text_to_words(raw_text)
 
   word_table <- words %>%
     words_to_word_table(to_lower = FALSE) %>%
