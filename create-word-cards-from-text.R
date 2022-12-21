@@ -41,41 +41,83 @@ if (FALSE)
   words <- text_to_words(raw_text)
 
   word_table <- words %>%
-    words_to_word_table(to_lower = FALSE) %>%
-    aggregate_lower_upper_case()
+    words_to_word_table() %>%
+    kwb.utils::renameAndSelect(list("word", frequency = "n")) %>%
+    kwb.utils::selectColumns(c("word", "n")) %>%
+    aggregate_by_case(column_word = "word") %>%
+    set_word_to_probable_case() %>%
+    order_by_frequency_and_word(column_frequency = "n_total")
   
   #View(word_table)
 
-  hyphenated <- hyphenate(word_table$word)
-  
-  syllables_in_words <- lapply(hyphenated, split_hyphenated, hyphen = "-")
-  
-  syllable_counts <- unlist(lapply(
-    seq_along(syllables_in_words),
-    function(i) table(syllables_in_words[[i]]) * word_table$frequency[i]
-  ))
-  
-  syllable_counts
-  
-  result <- syllable_counts %>%
-    split(tolower(remove_hyphens(names(syllable_counts)))) %>%
-    lapply(function(y) {
-      #y <- x[[5]]
-      z <- aggregate(y, by = list(names(y)), sum)
-      sort(stats::setNames(z[[2]], z[[1]]), decreasing = TRUE)
+  {
+    word_table$hyphenated <- hyphenate(word_table$word)
+    
+    syllable_data <- syllables_to_syllable_table(
+      hyphenated = word_table$hyphenated, 
+      frequencies = word_table$n_total
+    )
+    
+    #View(syllable_data)
+    
+    stopifnot(!anyDuplicated(syllable_data$syllable))
+    
+    # aggregate by pure syllable (without hyphens)
+    pure_syllable_data <- aggregate(
+      syllable_data[-1], 
+      by = list(syllable = remove_hyphens(syllable_data$syllable)),
+      FUN = sum
+    )
+    
+    #View(pure_syllable_data)
+    
+    syllable_stats <- aggregate_by_case(
+      data = pure_syllable_data, 
+      column_word = "syllable"
+    )
+    
+    compressed_stats <- syllable_stats %>%
+      kwb.utils::removeColumns(grep(
+        pattern = "syllable|total", 
+        x = names(syllable_stats), 
+        value = TRUE
+      )) %>%
+      apply(1L, function(x) x[kwb.utils::defaultIfNA(x, 0L) > 0L]) %>%
+      stats::setNames(syllable_stats$syllable)
+    
+    head(compressed_stats)
+    
+    formatted_stats <- lapply(stats::setNames(nm = names(compressed_stats)), function(name) {
+      #name <- names(compressed_stats)[1L]
+      x <- compressed_stats[[name]]
+      lower <- tolower(name)
+      upper <- to_upper_case(name)
+      suffix <- function(x) paste0("-", x)
+      prefix <- function(x) paste0(x, "-")
+      infix <- function(x) paste0("-", x, "-")
+      stats::setNames(x, kwb.utils::multiSubstitute(names(x), list(
+        words_lower = lower,
+        words_upper = upper,
+        prefixes_lower = prefix(lower),
+        prefixes_upper = prefix(upper),
+        infixes_lower = infix(lower),
+        infixes_upper = infix(upper),
+        suffixes_lower = suffix(lower),
+        suffixes_upper = suffix(upper)
+      )))
     })
+    
+    kwb.utils::toPdf({
+      par(mfrow = c(3L, 4L), par = c(0.2, 0.2, 0.2, 0.2))
+      lapply(formatted_stats, plot_wordcloud)
+    })
+    
+  }
   
-  # z <- result$an
-  # writeLines(names(z))
-  # sprintf("%d (%s)", sum(z), paste(z, collapse = "+"))
-  # 
-  # %>% 
-  #   lapply(function(x) {
-  #     table
-  #   })
+  formatted_stats[order(lengths(formatted_stats))]
   
-  #%>%
-  #  sort(decreasing = TRUE)
+  View(syllable_stats)
+  stopifnot(!anyDuplicated(syllable_stats$syllable))
   
   word_table <- data.frame(
     nchar = nchar(names(syllable_counts)),
@@ -111,6 +153,12 @@ if (FALSE)
   hyphenated <- hyphenate(x = unique_words)
 
   View(data.frame(unique_words, hyphenated))
+  
+  # Check pattern for a certain word
+  patterns <- sapply(unique_words, determine_type_pattern)
+
+  (pattern <- patterns[names(patterns) == "bewundern"])
+  which(patterns == pattern)
 }
 
 # MAIN: Reorder split-positions.yml --------------------------------------------
@@ -119,6 +167,20 @@ if (FALSE)
   read_split_positions() %>%
     order_split_positions() %>%
     write_split_positions()
+}
+
+# MAIN: Reorganise split positions ---------------------------------------------
+if (FALSE)
+{
+  split_positions <- read_split_positions()
+  length(split_positions)
+  length(unique(split_positions))
+  position_strings <- unname(sapply(split_positions, paste, collapse = ","))
+  split(names(split_positions), f = position_strings)
+  split_positions[(sort(names(split_positions)))]
+  split_positions[startsWith(names(split_positions), "1c-1v-1c-1v")]
+  reverted <- revert_split_positions(split_positions)
+  reverted
 }
 
 # MAIN: Other approaches -------------------------------------------------------
@@ -270,17 +332,25 @@ syllables_to_syllable_table <- function(hyphenated, frequencies)
     function(i) table(syllables_in_words[[i]]) * frequencies[i]
   ))
   
-  full_syllables <- names(syllable_counts)
+  # Sum up the counts for identical syllables
+  unique_syllable_counts <- sapply(
+    X = split(syllable_counts, names(syllable_counts)), 
+    FUN = sum
+  )
   
-  syllable_type_matrix <- syllable_counts * cbind(
-    prefixes =  is_prefix(full_syllables),
-    infixes =  is_infix(full_syllables),
-    suffixes = is_suffix(full_syllables),
-    words = is_word(full_syllables)
+  unique_syllables <- names(unique_syllable_counts)
+  
+  stopifnot(!anyDuplicated(unique_syllables))
+  
+  syllable_type_matrix <- unique_syllable_counts * cbind(
+    prefixes = is_prefix(unique_syllables),
+    infixes = is_infix(unique_syllables),
+    suffixes = is_suffix(unique_syllables),
+    words = is_word(unique_syllables)
   )
   
   data.frame(
-    syllable = full_syllables,
+    syllable = unique_syllables,
     syllable_type_matrix,
     total = rowSums(syllable_type_matrix),
     row.names = NULL
@@ -308,6 +378,8 @@ aggregate_by_case <- function(data, column_word = "word")
   # Save the words in original case
   words <- kwb.utils::selectElements(data, column_word)
   
+  stopifnot(!anyDuplicated(words))
+  
   # Set all words in the data frame to lower case
   data[[column_word]] <- tolower(data[[column_word]])
   
@@ -321,7 +393,7 @@ aggregate_by_case <- function(data, column_word = "word")
   
   # Aggregate the original table by the (lower case) words so that upper case
   # and lower case frequencies are summed up
-  data %>%
+  result <- data %>%
     kwb.utils::removeColumns(column_word) %>%
     aggregate(by = data[column_word], FUN = sum) %>%
     # Prepare argument list for mergeAll()
@@ -338,6 +410,8 @@ aggregate_by_case <- function(data, column_word = "word")
     }) %>%
     # Make sure that the result is a data frame again
     data.frame()
+  
+  result
 }
 
 # set_word_to_probable_case ----------------------------------------------------
@@ -627,6 +701,10 @@ is_vowel <- function(chars)
 # to_consonant_sequence_type ---------------------------------------------------
 to_consonant_sequence_type <- function(x, pattern)
 {
+  if (length(x) == 0L) {
+    return(character())
+  }
+  
   parts <- kwb.utils::extractSubstring(pattern, x, 1:3)
   
   format_nchar <- function(x, fmt) ifelse(x == "", "", sprintf(fmt, nchar(x)))
@@ -997,3 +1075,15 @@ is_infix <- function(x) startsWith(x, "-") & endsWith(x, "-")
 
 # is_word ----------------------------------------------------------------------
 is_word <- function(x) !(is_prefix(x) | is_suffix(x) | is_infix(x))
+
+# determine_type_pattern -------------------------------------------------------
+determine_type_pattern <- function(word)
+{
+  paste(split_words(word)$type, collapse = "-")
+}
+
+# plot_wordcloud ---------------------------------------------------------------
+plot_wordcloud <- function(x)
+{
+  wordcloud::wordcloud(names(x), unname(x), cex.text = 0.5)
+}

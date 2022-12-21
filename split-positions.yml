@@ -356,13 +356,13 @@ DT-2c-1v-CH: 3
 1c-1v-1c-2v-1c: 3
 1c-1v-2c-1v-1c: 3
 1c-1v-2c-1v-2c: 3
-1c-1v-2c-1v-3c: 3
+1c-1v-2c-1v-3c: 2
 1c-1v-2c-1v-CH: 3
 1c-1v-2c-1v-SZ: 3
 1c-1v-2c-2v-2c: 3
 1c-1v-2c-DT-1c: 3
 1c-1v-2c-DT-2c: 3
-1c-1v-3c-1v-2c: 3
+1c-1v-3c-1v-2c: 4
 1c-2v-1c-1v-1c: 3
 1c-2v-1c-1v-2c: 3
 1c-3v-3c-1v-1c:
@@ -426,7 +426,7 @@ DT-3c-DT-1c-1v-1c:
 - 7
 1c-1v-1c-SCH-DT-1c: 3
 1c-1v-1c-1v-2c-1v-2c:
-- 3
+- 2
 - 5
 1c-1v-1c-DT-3c-1v-1c:
 - 3
