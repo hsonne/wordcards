@@ -420,6 +420,10 @@ hyphenate <- function(x)
   # For performance reasons, split only unique lower case words
   hyphenated <- split_into_syllables(full_words = unique(lower_x))
 
+  if (is.null(hyphenated)) {
+    return()
+  }
+  
   # Initialise result vector with lower case hyphenated versions of words in x
   indices <- match(lower_x, remove_hyphens(hyphenated))
   stopifnot(all(!is.na(indices)))
@@ -455,14 +459,21 @@ split_into_syllables <- function(full_words)
   # Identify syllables by going through list of predefined patterns  
   syllables_by_pattern <- find_syllables(sets = all_sets)
   
-  if (FALSE) {
+  n_unknown <- length(kwb.utils::getAttribute(syllables_by_pattern, "sets"))
+  
+  if (n_unknown > 0L) {
+
+    message(
+      "For ", n_unknown, " patterns, there are no split positions defined.\n",
+      "In the opened file \"patterns_tmp.txt\", please insert hyphens at the ",
+      "correct positions within the words. Then, save the file as ", 
+      "\"patterns.txt\", run update_split_positions() and try again."
+    )
     
     # Prepare split position assignments for non treated patterns  
     prepare_split_assignments_for_non_treated(x = syllables_by_pattern)
     
-    # Modify "patterns_tmp.txt" by adding "-" within the words and save as
-    # "patterns.txt"
-    create_split_assignments_from_pattern_file(as_yaml = TRUE)
+    return()
   }
   
   sorted_syllables <- sort(unname(unlist(syllables_by_pattern)))
@@ -667,6 +678,18 @@ order_split_positions <- function(split_at)
   split_at[indices]
 }
 
+# update_split_positions -------------------------------------------------------
+update_split_positions <- function(file = "patterns.txt")
+{
+  # Modify "patterns_tmp.txt" by adding "-" within the words and save as
+  # "patterns.txt"
+  file %>%
+    get_split_positions_from_pattern_file() %>%
+    c(read_split_positions()) %>%
+    order_split_positions() %>%
+    write_split_positions()
+}
+
 # cat_split_positions ----------------------------------------------------------
 cat_split_positions <- function(x)
 {
@@ -746,10 +769,8 @@ prepare_split_assignments_for_non_treated <- function(x)
   file.edit(file)
 }
 
-# create_split_assignments_from_pattern_file -----------------------------------
-create_split_assignments_from_pattern_file <- function(
-    file = "patterns.txt", as_yaml = FALSE
-)
+# get_split_positions_from_pattern_file ----------------------------------------
+get_split_positions_from_pattern_file <- function(file = "patterns.txt")
 {
   substring_data <- kwb.utils::extractSubstring(
     pattern = "(^[^:]+):\\s+(.*)$", # "(^[^=]+)\\s+= 0L, #(.*)$"  
@@ -757,7 +778,7 @@ create_split_assignments_from_pattern_file <- function(
     index = c(pattern = 1L, words = 2L)
   )
   
-  split_positions <- substring_data$words %>%
+  substring_data$words %>%
     strsplit("\\s*,\\s*") %>%
     stats::setNames(substring_data$pattern) %>%
     lapply(function(x) {
@@ -767,7 +788,11 @@ create_split_assignments_from_pattern_file <- function(
       pos <- positions[[1L]]
       if (length(pos) > 1L) cumsum(pos)[-length(pos)] else 0L
     })
+}
 
+# output_split_positions -------------------------------------------------------
+output_split_positions <- function(split_positions, as_yaml = FALSE)
+{
   output <- if (as_yaml) {
     
     yaml::as.yaml(split_positions)
@@ -781,8 +806,8 @@ create_split_assignments_from_pattern_file <- function(
       )
     ))
   }
-  
-  writeLines(output)
+ 
+  writeLines(output) 
 }
 
 # write_lines_utf8 -------------------------------------------------------------
