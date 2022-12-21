@@ -246,23 +246,45 @@ correct_article_guesses <- function(article_guesses)
 }
 
 # words_to_word_table ----------------------------------------------------------
-words_to_word_table <- function(words, to_lower = TRUE)
+words_to_word_table <- function(words)
 {
-  if (isTRUE(to_lower)) {
-    words <- tolower(words)
+  stats <- table(words) %>%
+    as.data.frame(stringsAsFactors = FALSE) %>%
+    stats::setNames(c("word", "frequency"))
+  
+  cbind(nchar = nchar(stats$word), stats) %>%
+    order_by_frequency_and_word()
 }
 
-  word_groups <- split(words, nchar(words))
-  
-  lapply(
-    word_groups, 
-    function(x) stats::setNames(
-      as.data.frame(table(x), stringsAsFactors = FALSE),
-      c("word", "frequency")
+# syllables_to_syllable_table --------------------------------------------------
+syllables_to_syllable_table <- function(hyphenated, frequencies)
+{
+  syllables_in_words <- lapply(
+    X = hyphenated, 
+    FUN = split_hyphenated, 
+    hyphen = "-"
   )
-  ) %>%
-    dplyr::bind_rows(.id = "nchar") %>%
-    order_by_frequency_and_word()
+  
+  syllable_counts <- unlist(lapply(
+    seq_along(syllables_in_words),
+    function(i) table(syllables_in_words[[i]]) * frequencies[i]
+  ))
+  
+  full_syllables <- names(syllable_counts)
+  
+  syllable_type_matrix <- syllable_counts * cbind(
+    prefixes =  is_prefix(full_syllables),
+    infixes =  is_infix(full_syllables),
+    suffixes = is_suffix(full_syllables),
+    words = is_word(full_syllables)
+  )
+  
+  data.frame(
+    syllable = full_syllables,
+    syllable_type_matrix,
+    total = rowSums(syllable_type_matrix),
+    row.names = NULL
+  )
 }
 
 # order_by_frequency_and_word --------------------------------------------------
