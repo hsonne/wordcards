@@ -29,11 +29,11 @@ if (FALSE)
 if (FALSE)
 {
   words <- text_to_words(raw_text)
-
+  
   article_guesses <- guess_nouns_with_articles(words)
   articles <- correct_article_guesses(article_guesses)
   writeLines(articles)
-  
+
   word_table <- words %>%
     words_to_word_table(to_lower = FALSE) %>%
     aggregate_lower_upper_case()
@@ -43,7 +43,7 @@ if (FALSE)
   hyphenated <- hyphenate(word_table$word)
   
   syllables_in_words <- lapply(hyphenated, split_hyphenated, hyphen = "-")
-
+  
   syllable_counts <- unlist(lapply(
     seq_along(syllables_in_words),
     function(i) table(syllables_in_words[[i]]) * word_table$frequency[i]
@@ -244,8 +244,8 @@ words_to_word_table <- function(words, to_lower = TRUE)
 {
   if (isTRUE(to_lower)) {
     words <- tolower(words)
-  }
-  
+}
+
   word_groups <- split(words, nchar(words))
   
   lapply(
@@ -253,7 +253,7 @@ words_to_word_table <- function(words, to_lower = TRUE)
     function(x) stats::setNames(
       as.data.frame(table(x), stringsAsFactors = FALSE),
       c("word", "frequency")
-    )
+  )
   ) %>%
     dplyr::bind_rows(.id = "nchar") %>%
     order_by_frequency_and_word()
@@ -285,7 +285,7 @@ aggregate_lower_upper_case <- function(word_table)
   
   no_lower <- result$n_lower == 0L
   result$word[no_lower] <- to_upper_case(result$word[no_lower])
-  
+
   result %>%
     as.data.frame() %>%
     order_by_frequency_and_word() %>%
@@ -907,6 +907,10 @@ add_hyphens <- function(x, hyphen = "-")
 # to_upper_case ----------------------------------------------------------------
 to_upper_case <- function(x)
 {
+  if (length(x) == 0L) {
+    return(character())
+  }
+  
   x %>%
     strsplit("") %>%
     lapply(function(y) `[<-`(y, 1L, toupper(y[1L]))) %>%
@@ -917,5 +921,17 @@ to_upper_case <- function(x)
 is_upper_case <- function(x)
 {
   chars <- strsplit(x, "")
-  sapply(chars, function(y) y[1L] == toupper(y[[1L]]))
+  sapply(chars, function(y) y[1L] == toupper(y[[1L]]) && y[[1L]] != "ß")
 }
+
+# is_prefix --------------------------------------------------------------------
+is_prefix <- function(x) !startsWith(x, "-") & endsWith(x, "-")
+
+# is_suffix --------------------------------------------------------------------
+is_suffix <- function(x) startsWith(x, "-") & !endsWith(x, "-")
+
+# is_infix ---------------------------------------------------------------------
+is_infix <- function(x) startsWith(x, "-") & endsWith(x, "-")
+
+# is_word ----------------------------------------------------------------------
+is_word <- function(x) !(is_prefix(x) | is_suffix(x) | is_infix(x))
