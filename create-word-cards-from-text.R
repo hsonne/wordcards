@@ -288,36 +288,70 @@ syllables_to_syllable_table <- function(hyphenated, frequencies)
 }
 
 # order_by_frequency_and_word --------------------------------------------------
-order_by_frequency_and_word <- function(data)
+order_by_frequency_and_word <- function(
+    data, 
+    column_frequency = "frequency",
+    column_word = "word"
+)
 {
   kwb.utils::orderBy(
     data, 
-    c("frequency", "word"), 
+    by = c(column_frequency, column_word), 
     decreasing = c(TRUE, FALSE),
     method = "radix"
   )
 }
 
-# aggregate_lower_upper_case ---------------------------------------------------
-aggregate_lower_upper_case <- function(word_table)
+# aggregate_by_case ------------------------------------------------------------
+aggregate_by_case <- function(data, column_word = "word")
 {
-  result <- word_table %>%
-    dplyr::group_by(nchar, tolower(word)) %>%
-    dplyr::summarise(
-      n_lower = sum(frequency[!is_upper_case(word)]),
-      n_upper = sum(frequency[is_upper_case(word)]),
-      frequency = n_lower + n_upper,
-      .groups = "drop"
-    ) %>%
-    dplyr::rename(word = "tolower(word)")
+  # Save the words in original case
+  words <- kwb.utils::selectElements(data, column_word)
   
-  no_lower <- result$n_lower == 0L
-  result$word[no_lower] <- to_upper_case(result$word[no_lower])
+  # Set all words in the data frame to lower case
+  data[[column_word]] <- tolower(data[[column_word]])
+  
+  # Split data frame into two subsets. The first contains the rows belonging to
+  # lower case words, the second contains the rows belonging to upper case words
+  by_case <- split(data, factor(
+    is_upper_case(words), 
+    levels = c("FALSE", "TRUE"), 
+    labels = c("lower", "upper")
+  ))
+  
+  # Aggregate the original table by the (lower case) words so that upper case
+  # and lower case frequencies are summed up
+  data %>%
+    kwb.utils::removeColumns(column_word) %>%
+    aggregate(by = data[column_word], FUN = sum) %>%
+    # Prepare argument list for mergeAll()
+    list() %>%
+    stats::setNames("total") %>%
+    c(by_case) %>%
+    # Merge "total" frequencies from aggregation with "by_case"-frequencies
+    kwb.utils::mergeAll(by = column_word, all = TRUE, dbg = FALSE) %>%
+    # Replace "." in column names (created by mergeAll()) with underscore
+    stats::setNames(gsub("\\.", "_", names(.))) %>%
+    # In integer columns, set all NA to 0 (0L = integer constant)
+    lapply(function(x) {
+      if (is.integer(x)) kwb.utils::defaultIfNA(x, 0L) else x
+    }) %>%
+    # Make sure that the result is a data frame again
+    data.frame()
+}
 
-  result %>%
-    as.data.frame() %>%
-    order_by_frequency_and_word() %>%
-    kwb.utils::moveColumnsToFront(c("nchar", "word", "frequency"))
+# set_word_to_probable_case ----------------------------------------------------
+set_word_to_probable_case <- function(word_table)
+{
+  words <- kwb.utils::selectColumns(word_table, "word")
+
+  no_lower <- kwb.utils::selectColumns(word_table, "n_lower") == 0L
+  
+  words[no_lower] <- to_upper_case(words[no_lower])
+
+  word_table[["word"]] <- words
+  
+  word_table
 }
 
 # plot_word_cards --------------------------------------------------------------
