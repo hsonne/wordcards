@@ -17,6 +17,7 @@ if (FALSE)
 # MAIN: Get raw text -----------------------------------------------------------
 if (FALSE)
 {
+  name <- "das-hochnaesige-einhorn"
   name <- "die-groesste-getreidepflanze"
   name <- "hahn-und-huhn"
   name <- "kater-leo-arzt"
@@ -141,7 +142,8 @@ read_text <- function(name)
 {
   list_available_text_files() %>%
     kwb.utils::selectElements(name) %>%
-    kwb.utils::readLinesWithEncoding(fileEncoding = "UTF-8")
+    kwb.utils::readLinesWithEncoding(fileEncoding = "UTF-8") %>%
+    remove_comment_lines()
 }
 
 # list_available_text_files ----------------------------------------------------
@@ -151,10 +153,21 @@ list_available_text_files <- function()
   stats::setNames(files, kwb.utils::removeExtension(basename(unlist(files))))
 }
 
+# remove_comment_lines ---------------------------------------------------------
+remove_comment_lines <- function(x)
+{
+  grep("^#", x, invert = TRUE, value = TRUE)
+}
+
 # text_to_words ----------------------------------------------------------------
 text_to_words <- function(raw_text)
 {
-  strsplit(paste(clean_text(raw_text), collapse = " "), " +")[[1L]]
+  raw_text %>%
+    clean_text() %>%
+    paste(collapse = " ") %>%
+    strsplit("\\s+") %>%
+    `[[`(1L) %>%
+    kwb.utils::removeEmpty2()
 }
 
 # clean_text -------------------------------------------------------------------
