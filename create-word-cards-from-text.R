@@ -512,8 +512,15 @@ plot_card <- function(
 init_empty_plot <- function(xlim = c(-1, 1), ylim = c(-1, 1))
 {
   plot(
-    0, 0, pch = NA, xlab = "", ylab = "", xaxt = "n", yaxt = "n",
-    xlim = xlim, ylim = ylim
+    x = 0, 
+    y = 0, 
+    type = "n", 
+    xlab = "", 
+    ylab = "", 
+    xaxt = "n", 
+    yaxt = "n",
+    xlim = xlim, 
+    ylim = ylim
   )
 }
 
