@@ -8,7 +8,7 @@ clean_text <- function(raw_text)
     "[.]+" = " "
   )
   
-  names(replacements) <- replace_special_char_placeholders(names(replacements))
+  names(replacements) <- replace_specials(names(replacements))
   
   kwb.utils::multiSubstitute(raw_text, replacements)
 }

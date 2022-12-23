@@ -2,17 +2,6 @@
 # Source the whole script first to load the function definitions below
 #
 
-# MAIN: Show files with non-ASCII characters -----------------------------------
-if (FALSE)
-{
-  result <- lapply(
-    stats::setNames(nm = dir("R", full.names = TRUE)), 
-    tools::showNonASCIIfile
-  )
-  
-  result[lengths(result) > 0L]
-}
-
 # MAIN: Size words according to their frequency and arrange them vertically ----
 if (FALSE)
 {
@@ -25,22 +14,6 @@ if (FALSE)
     vertical_space_share = 0.3, 
     spacing_method = "proportional" # "equal"
   )
-}
-
-# MAIN: Save split positions to yaml file --------------------------------------
-if (FALSE)
-{
-  file <- "inst/extdata/split-positions.yml"
-  split_positions <- wordcards:::read_split_positions(file)
-  yaml::write_yaml(split_positions, file)
-}
-
-# MAIN: Download texts that are available online -------------------------------
-if (FALSE)
-{
-  text <- read_story_kater_leo_arzt()
-  
-  wordcards:::write_lines_utf8(text, "inst/extdata/texts/kater-leo-arzt.txt")
 }
 
 # MAIN: Get raw text -----------------------------------------------------------
@@ -185,4 +158,31 @@ read_story_kater_leo_arzt <- function()
   pattern <- "aktualisiert: \\d{2}\\.\\d{2}\\.\\d{4}(.*)$"
   
   kwb.utils::extractSubstring(pattern, story_line, 1L)
+}
+
+# MAIN: Download texts that are available online -------------------------------
+if (FALSE)
+{
+  text <- read_story_kater_leo_arzt()
+  
+  wordcards:::write_lines_utf8(text, "inst/extdata/texts/kater-leo-arzt.txt")
+}
+
+# MAIN: Save split positions to yaml file --------------------------------------
+if (FALSE)
+{
+  file <- "inst/extdata/split-positions.yml"
+  split_positions <- wordcards:::read_split_positions(file)
+  yaml::write_yaml(split_positions, file)
+}
+
+# MAIN: Show files with non-ASCII characters -----------------------------------
+if (FALSE)
+{
+  result <- lapply(
+    stats::setNames(nm = dir("R", full.names = TRUE)), 
+    tools::showNonASCIIfile
+  )
+  
+  result[lengths(result) > 0L]
 }
