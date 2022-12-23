@@ -22,6 +22,9 @@ add_sized_words_vertically <- function(
 {
   weights <- kwb.utils::percentageOfSum(freqs)
   
+  # cex values should not differ too much between each other
+  weights <- rescale(weights, target_range = c(1, 2))
+  
   size <- get_size_info(words, cex = weights)
   
   abline(h = ylim, lty = 3L)
@@ -139,4 +142,18 @@ arrange_vertically <- function(heights, ylim, method = "proportional")
   }
   
   cumsum(c(ylim[1L], heights[-n] + dy))
+}
+
+# rescale ----------------------------------------------------------------------
+rescale <- function(x, target_range = c(0, 1))
+{
+  x_range <- range(x)
+  diff_x_range <- diff(x_range)
+  
+  if (diff_x_range == 0) {
+    return(rep(mean(target_range), length(x)))
+  }
+  
+  ratio <- diff(target_range) / diff_x_range
+  (x - x_range[1L]) * ratio  + target_range[1L]
 }
