@@ -1,0 +1,21 @@
+Package: wordcards
+Title: Create Word or Syllable Cards from Text
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Hauke", "Sonnenberg", , "hauke.sonnenberg@kompetenz-wasser.de", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-9134-2871")),
+    person("Kompetenzzentrum Wasser Berlin gGmbH (KWB)", role = "cph")
+  )
+Description: This package provides functions to analyse the frequency of
+    words or syllables in a given text. It provides a function to create a
+    PDF file with all words or syllables printed on cards, together with
+    their frequencies. The idea is to use these cards to help children
+    learn to read.
+License: MIT + file LICENSE
+URL: https://github.com/KWB-R/wordcards
+BugReports: https://github.com/KWB-R/wordcards/issues
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.1
+Suggests: 
+    covr

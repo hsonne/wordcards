@@ -5,8 +5,6 @@
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/wordcards)]()
 [![R-Universe_Status_Badge](https://kwb-r.r-universe.dev/badges/wordcards)](https://kwb-r.r-universe.dev/)
 
-# wordcards
-
 This package provides functions to analyse the frequency of
 words or syllables in a given text. It provides a function to create a
 PDF file with all words or syllables printed on cards, together with
@@ -32,9 +30,3 @@ if (! require("remotes")) {
 # Install KWB package 'wordcards' from GitHub
 remotes::install_github("KWB-R/wordcards")
 ```
-
-## Documentation
-
-Release: [https://kwb-r.github.io/wordcards](https://kwb-r.github.io/wordcards)
-
-Development: [https://kwb-r.github.io/wordcards/dev](https://kwb-r.github.io/wordcards/dev)
