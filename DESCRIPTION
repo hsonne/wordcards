@@ -25,4 +25,6 @@ Imports:
     magrittr,
     rvest,
     yaml
-    
+Remotes:
+    github::KWB-R/kwb.plot,
+    github::KWB-R/kwb.utils
