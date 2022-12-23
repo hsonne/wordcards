@@ -4,28 +4,29 @@
 plot_word_cards <- function(
     words,
     frequencies = NULL,
-    file = NULL,
+    file = "",
     per_page = 32L, 
+    to_pdf = TRUE,
     ...
 )
 {
-  kwb.utils::toPdf(pdfFile = file, landscape = FALSE, expressions = {
+  file <- kwb.utils::preparePdfIf(to_pdf, file, landscape = FALSE)
+  on.exit(kwb.utils::finishAndShowPdfIf(to_pdf, file))
+  
+  mfrow <- kwb.plot::bestRowColumnSetting(per_page, target.ratio = 0.71)
+  
+  graphics::par(mfrow = mfrow, mar = c(0, 0, 0, 0))
+  
+  for (i in seq_along(words)) {
     
-    mfrow <- kwb.plot::bestRowColumnSetting(per_page, target.ratio = 0.71)
+    word <- words[i]
     
-    graphics::par(mfrow = mfrow, mar = c(0, 0, 0, 0))
-    
-    for (i in seq_along(words)) {
-      
-      word <- words[i]
-      
-      if (is.null(frequencies)) {
-        plot_word_card(word, i, freq = NULL, ...)
-      } else {
-        plot_word_card(word, i, freq = frequencies[i], ...)
-      }
+    if (is.null(frequencies)) {
+      plot_word_card(word, i, freq = NULL, ...)
+    } else {
+      plot_word_card(word, i, freq = frequencies[i], ...)
     }
-  })
+  }
 }
 
 # plot_word_card ---------------------------------------------------------------

@@ -91,7 +91,8 @@ if (FALSE)
     file = sprintf("inst/extdata/output/cards_%s.pdf", name), 
     both_cases = FALSE, 
     cex = 2.2,
-    label_types = c(1L, 2L, 2L)
+    label_types = c(1L, 2L, 2L),
+    to_pdf = FALSE
   )
   
 }

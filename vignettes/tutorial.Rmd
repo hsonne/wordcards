@@ -105,12 +105,15 @@ Hier seht ihr die vollständige Tabelle:
 DT::datatable(word_table)
 ```
 
-```{r}
+```{r fig.width = 8, fig.height = 12}
 n <- 32
+
 wordcards:::plot_word_cards(
   words = word_table$word[1:n], 
   frequencies = word_table$frequency[1:n], 
-  both_cases = FALSE
+  both_cases = FALSE,
+  to_pdf = FALSE,
+  cex = 3
 )
 ```
 
