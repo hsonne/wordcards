@@ -2,8 +2,8 @@ pandoc: 2.19.2
 pkgdown: 2.0.7
 pkgdown_sha: ~
 articles: {}
-last_built: 2022-12-23T14:48Z
+last_built: 2022-12-23T15:05Z
 urls:
-  reference: https://kwb-r.github.io/wordcards/reference
-  article: https://kwb-r.github.io/wordcards/articles
+  reference: https://hsonne.github.io/wordcards/reference
+  article: https://hsonne.github.io/wordcards/articles
 
