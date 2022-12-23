@@ -17,7 +17,9 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
 Suggests: 
-    covr
+    covr,
+    knitr,
+    rmarkdown
 Imports:
     kwb.plot,
     kwb.utils,
@@ -27,3 +29,4 @@ Imports:
 Remotes:
     github::KWB-R/kwb.plot,
     github::KWB-R/kwb.utils
+VignetteBuilder: knitr
