@@ -238,7 +238,7 @@ plot_card <- function(
 }
 
 # init_empty_plot --------------------------------------------------------------
-init_empty_plot <- function(xlim = c(-1, 1), ylim = c(-1, 1))
+init_empty_plot <- function(xlim = c(-1, 1), ylim = c(-1, 1), ...)
 {
   plot(
     x = 0, 
@@ -249,7 +249,8 @@ init_empty_plot <- function(xlim = c(-1, 1), ylim = c(-1, 1))
     xaxt = "n", 
     yaxt = "n",
     xlim = xlim, 
-    ylim = ylim
+    ylim = ylim,
+    ...
   )
 }
 
