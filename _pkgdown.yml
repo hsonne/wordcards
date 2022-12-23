@@ -2,10 +2,6 @@ url: https://kwb-r.github.io/wordcards
 authors:
   Hauke Sonnenberg:
     href: https://github.com/hsonne
-  Kompetenzzentrum Wasser Berlin gGmbH (KWB):
-    href: http://www.kompetenz-wasser.de
-    html: <img src='https://publications.kompetenz-wasser.de/img/KWB-Logo.svg' alt='KWB'
-      width='72' />
 template:
   bootstrap: 5
   bootswatch: cerulean
