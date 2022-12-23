@@ -2,6 +2,17 @@
 # Source the whole script first to load the function definitions below
 #
 
+# MAIN: Show files with non-ASCII characters -----------------------------------
+if (FALSE)
+{
+  result <- lapply(
+    stats::setNames(nm = dir("R", full.names = TRUE)), 
+    tools::showNonASCIIfile
+  )
+  
+  result[lengths(result) > 0L]
+}
+
 # MAIN: Size words according to their frequency and arrange them vertically ----
 if (FALSE)
 {

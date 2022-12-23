@@ -28,35 +28,6 @@ is_article <- function(word)
   tolower(word) %in% c("der", "die", "das")
 }
 
-# correct_article_guesses ------------------------------------------------------
-correct_article_guesses <- function(article_guesses)
-{
-  corrections <- c(
-    "die Arbeitsplatte", 
-    "die Arztpraxis", 
-    "die Diele",
-    "die Küche",
-    "die Praxis", 
-    "die Reihe",
-    "die Spitze",
-    "die Spüle", 
-    "die Stube",
-    "die Tulpen", 
-    "die Untersuchung", 
-    "die Zwischenzeit"
-  )
-  
-  get_noun <- function(x) sapply(strsplit(x, " "), "[", 2L)
-  
-  i <- match(get_noun(article_guesses), get_noun(corrections))
-  
-  is_match <- !is.na(i)
-  
-  article_guesses[is_match] <- corrections[i[is_match]]
-  
-  article_guesses
-}
-
 # words_to_word_table ----------------------------------------------------------
 #' @importFrom stats setNames
 words_to_word_table <- function(words)
@@ -398,75 +369,6 @@ split_into_syllables <- function(full_words)
   result
 }
 
-# split_words ------------------------------------------------------------------
-#' @importFrom kwb.utils findChanges moveColumnsToFront rbindAll removeColumns
-#' @importFrom kwb.utils repeated renameColumns
-#' @importFrom stats setNames
-split_words <- function(words, style = 1L)
-{
-  word_chars <- stats::setNames(strsplit(tolower(words), ""), words)
-  
-  word_parts <- lapply(word_chars, function(chars) {
-    changes <- kwb.utils::findChanges(is_vowel(chars))
-    changes$part <- sapply(seq_len(nrow(changes)), function(i) {
-      paste0(chars[changes$starts_at[i]:changes$ends_at[i]], collapse = "")
-    })
-    changes
-  })
-  
-  word_data <- word_parts %>%
-    kwb.utils::rbindAll(nameColumn = "word") %>%
-    kwb.utils::renameColumns(list(starts_at = "from", ends_at = "to"))
-  
-  word_data$nchar <- word_data$to - word_data$from + 1L
-  
-  type_name <- function(n, type) {
-    if (style == 1L) {
-      paste0(n, type)
-    } else if (style == 2L) {
-      sapply(n, kwb.utils::repeated, x = type)
-    }
-  }
-  
-  word_data$type <- ifelse(
-    word_data$value, 
-    type_name(word_data$nchar, "v"), 
-    type_name(word_data$nchar, "c")
-  )
-  
-  parts <- word_data$part
-  
-  i <- which(parts %in% c("ch", "ck", "sch"))
-  word_data$type[i] <- toupper(parts[i])
-  
-  pattern <- "^(.*)(sch)(.*)$"
-  i <- which(grepl(pattern, parts) & word_data$type != "SCH")
-  word_data$type[i] <- to_consonant_sequence_type(parts[i], pattern)
-  
-  pattern <- "^(.*)(ch|ck)(.*)$"
-  i <- which(
-    grepl(pattern, parts) & 
-      !word_data$type %in% c("CH", "CK") & !grepl("SCH", word_data$type)
-  )
-  word_data$type[i] <- to_consonant_sequence_type(parts[i], pattern)
-  
-  i <- which(parts == "ß")
-  word_data$type[i] <- "SZ"
-  
-  i <- which(is_diphthong(parts))
-  word_data$type[i] <- "DT"
-  
-  word_data %>%
-    kwb.utils::removeColumns("value") %>%
-    kwb.utils::moveColumnsToFront("word")
-}
-
-# is_vowel ---------------------------------------------------------------------
-is_vowel <- function(chars)
-{
-  grepl("[aeiouäöüy]", chars)
-}
-
 # to_consonant_sequence_type ---------------------------------------------------
 #' @importFrom kwb.utils extractSubstring
 to_consonant_sequence_type <- function(x, pattern)
@@ -484,14 +386,6 @@ to_consonant_sequence_type <- function(x, pattern)
     toupper(parts[[2L]]),
     format_nchar(parts[[3L]], "-%dc")
   )
-}
-
-# is_diphthong -----------------------------------------------------------------
-# Die bekanntesten Schreibungen von Diphthongen im Deutschen sind ei, au, äu und 
-# eu; selten sind ai, oi und ui. 
-is_diphthong <- function(x)
-{
-  x %in% c("ei", "au", "äu", "eu", "ai", "oi", "ui")
 }
 
 # find_syllables ---------------------------------------------------------------
@@ -555,11 +449,11 @@ read_split_positions <- function(
   # `1c-1v-1c-1v-2c-1v-1c` = c(2L, 5L), # her-un-ter
   # `1c-1v-1c-1v-3c-1v-1c` = c(2L, 6L), # ko-mi-schen (sch)
   # `1c-1v-1c-2v-1c` = 3L, # ge-fiel
-  # `1c-1v-2c-1v-3c` = 3L, # "gestärkt"
+  # `1c-1v-2c-1v-3c` = 3L, # "gest<ae>rkt"
   # `1c-1v-3c-1v-1c` = 4L, # wi-scher (look for sch)
   # `1c-1v-4c-1v-1c` = 4L, # "menschen" (sch)
   # `2c-1v-2c-1v-1c` = 4L, # ch, ck: kra-chen ste-cken
-  # `2c-1v-3c-1v-2c` = 5L, # "früh-stück"
+  # `2c-1v-3c-1v-2c` = 5L, # "fr<ue>h-st<ue>ck"
   
   yaml::read_yaml(kwb.utils::safePath(file))
 }
@@ -791,18 +685,6 @@ replacements_double_consonants <- function()
   stats::setNames(replacements, paste0(consonants, consonants, "(.{1,})$"))
 }
 
-# is_true_for_part_at ----------------------------------------------------------
-is_true_for_part_at <- function(x, i, fun, ...) {
-  sapply(x, function(y) nrow(y) >= i && isTRUE(fun(y$part[i], ...)))
-}
-
-has_ch_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ch")
-has_ck_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ck")
-has_sz_at <- function(x, i) is_true_for_part_at(x, i, `==`, "ß")
-has_ch_or_ck_at <- function(x, i) is_true_for_part_at(x, i, `%in%`, c("ch", "ck"))
-has_diphthong_at <- function(x, i) is_true_for_part_at(x, i, is_diphthong)
-
-
 # split_hyphenated -------------------------------------------------------------
 split_hyphenated <- function(x, hyphen = "")
 {
@@ -827,26 +709,6 @@ add_hyphens <- function(x, hyphen = "-")
   x[except_first] <- paste0(hyphen, x[except_first])
   
   x
-}
-
-# to_upper_case ----------------------------------------------------------------
-to_upper_case <- function(x)
-{
-  if (length(x) == 0L) {
-    return(character())
-  }
-  
-  x %>%
-    strsplit("") %>%
-    lapply(function(y) `[<-`(y, 1L, toupper(y[1L]))) %>%
-    sapply(paste0, collapse = "")
-}
-
-# is_upper_case ----------------------------------------------------------------
-is_upper_case <- function(x)
-{
-  chars <- strsplit(x, "")
-  sapply(chars, function(y) y[1L] == toupper(y[[1L]]) && y[[1L]] != "ß")
 }
 
 # is_prefix --------------------------------------------------------------------
