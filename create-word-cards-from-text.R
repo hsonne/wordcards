@@ -50,69 +50,25 @@ if (FALSE)
   
   #View(word_table)
 
-  {
-    word_table$hyphenated <- hyphenate(word_table$word)
-    
-    syllable_data <- syllables_to_syllable_table(
-      hyphenated = word_table$hyphenated, 
-      frequencies = word_table$n_total
-    )
-    
-    #View(syllable_data)
-    
-    stopifnot(!anyDuplicated(syllable_data$syllable))
-    
-    # aggregate by pure syllable (without hyphens)
-    pure_syllable_data <- aggregate(
-      syllable_data[-1], 
-      by = list(syllable = remove_hyphens(syllable_data$syllable)),
-      FUN = sum
-    )
-    
-    #View(pure_syllable_data)
-    
-    syllable_stats <- aggregate_by_case(
-      data = pure_syllable_data, 
-      column_word = "syllable"
-    )
-    
-    compressed_stats <- syllable_stats %>%
-      kwb.utils::removeColumns(grep(
-        pattern = "syllable|total", 
-        x = names(syllable_stats), 
-        value = TRUE
-      )) %>%
-      apply(1L, function(x) x[kwb.utils::defaultIfNA(x, 0L) > 0L]) %>%
-      stats::setNames(syllable_stats$syllable)
-    
-    head(compressed_stats)
-    
-    formatted_stats <- lapply(stats::setNames(nm = names(compressed_stats)), function(name) {
-      #name <- names(compressed_stats)[1L]
-      x <- compressed_stats[[name]]
-      lower <- tolower(name)
-      upper <- to_upper_case(name)
-      suffix <- function(x) paste0("-", x)
-      prefix <- function(x) paste0(x, "-")
-      infix <- function(x) paste0("-", x, "-")
-      stats::setNames(x, kwb.utils::multiSubstitute(names(x), list(
-        words_lower = lower,
-        words_upper = upper,
-        prefixes_lower = prefix(lower),
-        prefixes_upper = prefix(upper),
-        infixes_lower = infix(lower),
-        infixes_upper = infix(upper),
-        suffixes_lower = suffix(lower),
-        suffixes_upper = suffix(upper)
-      )))
-    })
-    
-    kwb.utils::toPdf({
-      par(mfrow = c(3L, 4L), par = c(0.2, 0.2, 0.2, 0.2))
-      lapply(formatted_stats, plot_wordcloud)
-    })
-    
-  }
+  word_table$hyphenated <- hyphenate(word_table$word)
+  
+  syllable_data <- syllables_to_syllable_table(
+    hyphenated = word_table$hyphenated, 
+    frequencies = word_table$n_total
+  )
+  
+  #View(syllable_data)
+  
+  stopifnot(!anyDuplicated(syllable_data$syllable))
+  
+  formatted_stats <- aggregate_syllable_data(syllable_data)
+  
+  lapply(formatted_stats, function(x) 0.01 * kwb.utils::percentageOfSum(x))
+  
+  kwb.utils::toPdf(pdfFile = "./output/syllables_hahn-und-huhn.pdf", {
+    par(mfrow = c(3L, 4L), mar = c(0.2, 0.2, 0.2, 0.2))
+    lapply(formatted_stats, plot_wordcloud)
+  })
   
   formatted_stats[order(lengths(formatted_stats))]
   
@@ -1090,7 +1046,64 @@ determine_type_pattern <- function(word)
 }
 
 # plot_wordcloud ---------------------------------------------------------------
-plot_wordcloud <- function(x)
+plot_wordcloud <- function(x, cex = 2)
 {
-  wordcloud::wordcloud(names(x), unname(x), cex.text = 0.5)
+  source("size-and-arrange-words.R")
+  
+  #cex <- 2
+  
+  x <- sort(x, decreasing = TRUE)
+  
+  # wordcloud::wordcloud(
+  #   names(x), unname(x), scale = c(1, 10), min.freq = 1L, random.order = FALSE,
+  #   rot.per = 0)
+  init_empty_plot(xlim = c(0, 1), ylim = c(0, 1))
+  add_sized_words_vertically(words = names(x), freqs = unname(x))
+}
+
+# aggregate_syllable_data ------------------------------------------------------
+aggregate_syllable_data <- function(syllable_data)
+{
+  # Aggregate by pure syllable (without hyphens)
+  pure_syllable_data <- aggregate(
+    syllable_data[-1L], 
+    by = list(syllable = remove_hyphens(syllable_data$syllable)),
+    FUN = sum
+  )
+  
+  #View(pure_syllable_data)
+  
+  syllable_stats <- aggregate_by_case(
+    data = pure_syllable_data, 
+    column_word = "syllable"
+  )
+  
+  compressed_stats <- syllable_stats %>%
+    kwb.utils::removeColumns(grep(
+      pattern = "syllable|total", 
+      x = names(syllable_stats), 
+      value = TRUE
+    )) %>%
+    apply(1L, function(x) x[kwb.utils::defaultIfNA(x, 0L) > 0L]) %>%
+    stats::setNames(syllable_stats$syllable)
+  
+  lapply(stats::setNames(nm = names(compressed_stats)), function(name) {
+    #name <- names(compressed_stats)[1L]
+    x <- sort(compressed_stats[[name]], decreasing = TRUE)
+    lower <- tolower(name)
+    upper <- to_upper_case(name)
+    suffix <- function(x) paste0("-", x)
+    prefix <- function(x) paste0(x, "-")
+    infix <- function(x) paste0("-", x, "-")
+    stats::setNames(x, kwb.utils::multiSubstitute(names(x), list(
+      words_lower = lower,
+      words_upper = upper,
+      prefixes_lower = prefix(lower),
+      prefixes_upper = prefix(upper),
+      infixes_lower = infix(lower),
+      infixes_upper = infix(upper),
+      suffixes_lower = suffix(lower),
+      suffixes_upper = suffix(upper)
+    )))
+  })
 }
