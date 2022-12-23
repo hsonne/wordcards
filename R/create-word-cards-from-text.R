@@ -15,7 +15,8 @@ read_text <- function(name)
 #' @importFrom stats setNames
 list_available_text_files <- function()
 {
-  files <- as.list(dir("texts", "\\.txt$", full.names = TRUE))
+  path <- system.file("extdata/texts", package = "wordcards")
+  files <- as.list(dir(path, "\\.txt$", full.names = TRUE))
   stats::setNames(files, kwb.utils::removeExtension(basename(unlist(files))))
 }
 
@@ -204,7 +205,7 @@ aggregate_by_case <- function(data, column_word = "word")
     stats::setNames("total") %>%
     c(by_case) %>%
     # Merge "total" frequencies from aggregation with "by_case"-frequencies
-    kwb.utils::mergeAll(by = column_word, all = TRUE, dbg = FALSE) %>%
+    kwb.utils::mergeAll(by = column_word, all = TRUE, dbg = FALSE)
     
   result %>%
     # Replace "." in column names (created by mergeAll()) with underscore
@@ -215,8 +216,6 @@ aggregate_by_case <- function(data, column_word = "word")
     }) %>%
     # Make sure that the result is a data frame again
     data.frame()
-  
-  result
 }
 
 # set_word_to_probable_case ----------------------------------------------------
@@ -437,7 +436,7 @@ split_into_syllables <- function(full_words)
   
   write_lines_utf8(
     sort(c(short_words, sorted_syllables)), 
-    path = "output/syllables_tmp.txt"
+    path = "inst/extdata/output/syllables_tmp.txt"
   )
   
   result <- full_words
@@ -591,7 +590,9 @@ find_syllables <- function(sets)
 # read_split_positions ---------------------------------------------------------
 #' @importFrom kwb.utils safePath
 #' @importFrom yaml read_yaml
-read_split_positions <- function(file = "split-positions.yml")
+read_split_positions <- function(
+    file = system.file("extdata/split-positions.yml", package = "wordcards")
+)
 {
   # To reorder the list after having added new patterns, copy the output of the
   # following command below into the body of this function:
@@ -919,8 +920,6 @@ determine_type_pattern <- function(word)
 # plot_wordcloud ---------------------------------------------------------------
 plot_wordcloud <- function(x, cex = 2)
 {
-  source("size-and-arrange-words.R")
-  
   #cex <- 2
   
   x <- sort(x, decreasing = TRUE)
