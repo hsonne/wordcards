@@ -60,3 +60,22 @@ split_words <- function(words, style = 1L)
     kwb.utils::removeColumns("value") %>%
     kwb.utils::moveColumnsToFront("word")
 }
+
+# to_consonant_sequence_type ---------------------------------------------------
+#' @importFrom kwb.utils extractSubstring
+to_consonant_sequence_type <- function(x, pattern)
+{
+  if (length(x) == 0L) {
+    return(character())
+  }
+  
+  parts <- kwb.utils::extractSubstring(pattern, x, 1:3)
+  
+  format_nchar <- function(x, fmt) ifelse(x == "", "", sprintf(fmt, nchar(x)))
+  
+  paste0(
+    format_nchar(parts[[1L]], "%dc-"),
+    toupper(parts[[2L]]),
+    format_nchar(parts[[3L]], "-%dc")
+  )
+}
