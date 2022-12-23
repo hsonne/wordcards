@@ -1,167 +1,7 @@
-library(magrittr)
-# MAIN: Save split positions to yaml file --------------------------------------
-if (FALSE)
-{
-  split_positions <- read_split_positions()
-  yaml::write_yaml(split_positions, "split-positions.yml")
-}
-
-# MAIN: Download texts that are available online -------------------------------
-if (FALSE)
-{
-  text <- read_story_kater_leo_arzt()
-  
-  write_lines_utf8(text, "texts/kater-leo-arzt.txt")
-}
-
-# MAIN: Get raw text -----------------------------------------------------------
-if (FALSE)
-{
-  name <- "das-hochnaesige-einhorn"
-  name <- "die-groesste-getreidepflanze"
-  name <- "hahn-und-huhn"
-  name <- "kater-leo-arzt"
-  
-  raw_text <- read_text(name)
-}
-
-# MAIN: Guess articles ---------------------------------------------------------
-if (FALSE)
-{
-  words <- text_to_words(raw_text)
-  
-  article_guesses <- guess_nouns_with_articles(words)
-  articles <- correct_article_guesses(article_guesses)
-  writeLines(articles)
-}
-
-# MAIN: Create word cards ------------------------------------------------------
-if (FALSE)
-{
-  words <- text_to_words(raw_text)
-
-  word_table <- words %>%
-    words_to_word_table() %>%
-    kwb.utils::renameAndSelect(list("word", frequency = "n")) %>%
-    kwb.utils::selectColumns(c("word", "n")) %>%
-    aggregate_by_case(column_word = "word") %>%
-    set_word_to_probable_case() %>%
-    order_by_frequency_and_word(column_frequency = "n_total")
-  
-  #View(word_table)
-
-  word_table$hyphenated <- hyphenate(word_table$word)
-  
-  syllable_data <- syllables_to_syllable_table(
-    hyphenated = word_table$hyphenated, 
-    frequencies = word_table$n_total
-  )
-  
-  #View(syllable_data)
-  
-  stopifnot(!anyDuplicated(syllable_data$syllable))
-  
-  formatted_stats <- aggregate_syllable_data(syllable_data)
-  
-  lapply(formatted_stats, function(x) 0.01 * kwb.utils::percentageOfSum(x))
-  
-  kwb.utils::toPdf(pdfFile = "./output/syllables_hahn-und-huhn.pdf", {
-    par(mfrow = c(3L, 4L), mar = c(0.2, 0.2, 0.2, 0.2))
-    lapply(formatted_stats, plot_wordcloud)
-  })
-  
-  formatted_stats[order(lengths(formatted_stats))]
-  
-  View(syllable_stats)
-  stopifnot(!anyDuplicated(syllable_stats$syllable))
-  
-  word_table <- data.frame(
-    nchar = nchar(names(syllable_counts)),
-    word = names(syllable_counts),
-    frequency = unname(syllable_counts)
-  )
-  
-  kwb.utils::createDirectory("output")
-  
-  #name <- kwb.utils::removeExtension(basename(file))
-  name <- paste0(name, "_syllables")
-  
-  plot_word_cards(
-    word_table$word, 
-    frequencies = word_table$frequency,
-    file = sprintf("output/cards_%s.pdf", name), 
-    both_cases = FALSE, 
-    cex = 2.2,
-    label_types = c(1L, 2L, 2L)
-  )
-  
-}
-
-# MAIN: Find syllables ---------------------------------------------------------
-if (FALSE)
-{
-  words <- text_to_words(raw_text)
-  
-  # All different words occurring in the text
-  unique_words <- sort(unique(words))
-
-  # Split the words at syllables (keeping upper/lower case)
-  hyphenated <- hyphenate(x = unique_words)
-
-  View(data.frame(unique_words, hyphenated))
-  
-  # Check pattern for a certain word
-  patterns <- sapply(unique_words, determine_type_pattern)
-
-  (pattern <- patterns[names(patterns) == "bewundern"])
-  which(patterns == pattern)
-}
-
-# MAIN: Reorder split-positions.yml --------------------------------------------
-if (FALSE)
-{
-  read_split_positions() %>%
-    order_split_positions() %>%
-    write_split_positions()
-}
-
-# MAIN: Reorganise split positions ---------------------------------------------
-if (FALSE)
-{
-  split_positions <- read_split_positions()
-  length(split_positions)
-  length(unique(split_positions))
-  position_strings <- unname(sapply(split_positions, paste, collapse = ","))
-  split(names(split_positions), f = position_strings)
-  split_positions[(sort(names(split_positions)))]
-  split_positions[startsWith(names(split_positions), "1c-1v-1c-1v")]
-  reverted <- revert_split_positions(split_positions)
-  reverted
-}
-
-# MAIN: Other approaches -------------------------------------------------------
-if (FALSE)
-{
-  #hyphenation <- lapply(words, call_hyphenation_service)
-  #words_raw <- kwb.utils::multiSubstitute(words, get_syllable_replacements())
-  #writeLines(grep("-", words_raw, value = TRUE))
-}
-
-# read_story_kater_leo_arzt ----------------------------------------------------
-read_story_kater_leo_arzt <- function()
-{
-  html <- rvest::read_html("https://www.zitronenbande.de/kater-leo-arzt/")
-  
-  text_lines <- strsplit(rvest::html_text(html), "\n")[[1L]]
-  
-  story_line <- grep("aktualisiert", text_lines, value = TRUE)
-  
-  pattern <- "aktualisiert: \\d{2}\\.\\d{2}\\.\\d{4}(.*)$"
-  
-  kwb.utils::extractSubstring(pattern, story_line, 1L)
-}
+# kwb.utils
 
 # read_text --------------------------------------------------------------------
+#' @importFrom kwb.utils readLinesWithEncoding selectElements
 read_text <- function(name)
 {
   list_available_text_files() %>%
@@ -171,6 +11,8 @@ read_text <- function(name)
 }
 
 # list_available_text_files ----------------------------------------------------
+#' @importFrom kwb.utils removeExtension
+#' @importFrom stats setNames
 list_available_text_files <- function()
 {
   files <- as.list(dir("texts", "\\.txt$", full.names = TRUE))
@@ -184,6 +26,7 @@ remove_comment_lines <- function(x)
 }
 
 # text_to_words ----------------------------------------------------------------
+#' @importFrom kwb.utils removeEmpty2
 text_to_words <- function(raw_text)
 {
   raw_text %>%
@@ -195,6 +38,7 @@ text_to_words <- function(raw_text)
 }
 
 # clean_text -------------------------------------------------------------------
+#' @importFrom kwb.utils multiSubstitute
 clean_text <- function(raw_text)
 {
   kwb.utils::multiSubstitute(raw_text, list(
@@ -263,6 +107,7 @@ correct_article_guesses <- function(article_guesses)
 }
 
 # words_to_word_table ----------------------------------------------------------
+#' @importFrom stats setNames
 words_to_word_table <- function(words)
 {
   stats <- table(words) %>%
@@ -313,6 +158,7 @@ syllables_to_syllable_table <- function(hyphenated, frequencies)
 }
 
 # order_by_frequency_and_word --------------------------------------------------
+#' @importFrom kwb.utils orderBy
 order_by_frequency_and_word <- function(
     data, 
     column_frequency = "frequency",
@@ -328,6 +174,8 @@ order_by_frequency_and_word <- function(
 }
 
 # aggregate_by_case ------------------------------------------------------------
+#' @importFrom kwb.utils defaultIfNA mergeAll removeColumns selectElements
+#' @importFrom stats setNames
 aggregate_by_case <- function(data, column_word = "word")
 {
   # Save the words in original case
@@ -357,8 +205,10 @@ aggregate_by_case <- function(data, column_word = "word")
     c(by_case) %>%
     # Merge "total" frequencies from aggregation with "by_case"-frequencies
     kwb.utils::mergeAll(by = column_word, all = TRUE, dbg = FALSE) %>%
+    
+  result %>%
     # Replace "." in column names (created by mergeAll()) with underscore
-    stats::setNames(gsub("\\.", "_", names(.))) %>%
+    stats::setNames(gsub("\\.", "_", names(result))) %>%
     # In integer columns, set all NA to 0 (0L = integer constant)
     lapply(function(x) {
       if (is.integer(x)) kwb.utils::defaultIfNA(x, 0L) else x
@@ -370,6 +220,7 @@ aggregate_by_case <- function(data, column_word = "word")
 }
 
 # set_word_to_probable_case ----------------------------------------------------
+#' @importFrom kwb.utils selectColumns
 set_word_to_probable_case <- function(word_table)
 {
   words <- kwb.utils::selectColumns(word_table, "word")
@@ -384,6 +235,8 @@ set_word_to_probable_case <- function(word_table)
 }
 
 # plot_word_cards --------------------------------------------------------------
+#' @importFrom kwb.plot bestRowColumnSetting
+#' @importFrom kwb.utils toPdf 
 plot_word_cards <- function(
     words,
     frequencies = NULL,
@@ -396,7 +249,7 @@ plot_word_cards <- function(
     
     mfrow <- kwb.plot::bestRowColumnSetting(per_page, target.ratio = 0.71)
     
-    par(mfrow = mfrow, mar = c(0, 0, 0, 0))
+    graphics::par(mfrow = mfrow, mar = c(0, 0, 0, 0))
     
     for (i in seq_along(words)) {
   
@@ -442,6 +295,7 @@ plot_word_card <- function(
 }
 
 # plot_card --------------------------------------------------------------------
+#' @importFrom graphics text
 plot_card <- function(
     texts, footer = c(NA, NA, NA), ylim = c(-1, 1), squeeze = 0.3, cex = 1, 
     cex.footer = 1
@@ -449,14 +303,14 @@ plot_card <- function(
 {
   text_footer <- function(text, x, y = -0.9) {
     if (!is.na(text)) {
-      text(x, y, text, cex = cex.footer)
+      graphics::text(x, y, text, cex = cex.footer)
     }
   }
   
   init_empty_plot()
   
   y <- positions_between(length(texts), squeeze * ylim)
-  text(0, rev(y), texts, cex = cex)
+  graphics::text(0, rev(y), texts, cex = cex)
   
   text_footer(footer[1L], x = -0.9)
   text_footer(footer[2L], x =  0.0)
@@ -536,6 +390,7 @@ hyphenate <- function(x)
 }
 
 # split_into_syllables ---------------------------------------------------------
+#' @importFrom kwb.utils getAttribute
 split_into_syllables <- function(full_words)
 {
   # Has a word three or less characters and is thus a syllable?
@@ -594,7 +449,10 @@ split_into_syllables <- function(full_words)
   result
 }
 
-# split_words -------------------------------------------------------------------
+# split_words ------------------------------------------------------------------
+#' @importFrom kwb.utils findChanges moveColumnsToFront rbindAll removeColumns
+#' @importFrom kwb.utils repeated renameColumns
+#' @importFrom stats setNames
 split_words <- function(words, style = 1L)
 {
   word_chars <- stats::setNames(strsplit(tolower(words), ""), words)
@@ -661,6 +519,7 @@ is_vowel <- function(chars)
 }
 
 # to_consonant_sequence_type ---------------------------------------------------
+#' @importFrom kwb.utils extractSubstring
 to_consonant_sequence_type <- function(x, pattern)
 {
   if (length(x) == 0L) {
@@ -730,6 +589,8 @@ find_syllables <- function(sets)
 }
 
 # read_split_positions ---------------------------------------------------------
+#' @importFrom kwb.utils safePath
+#' @importFrom yaml read_yaml
 read_split_positions <- function(file = "split-positions.yml")
 {
   # To reorder the list after having added new patterns, copy the output of the
@@ -753,6 +614,7 @@ read_split_positions <- function(file = "split-positions.yml")
 }
 
 # write_split_positions --------------------------------------------------------
+#' @importFrom yaml write_yaml
 write_split_positions <- function(
   split_positions, file = "split-positions.yml"
 )
@@ -793,6 +655,7 @@ update_split_positions <- function(file = "patterns.txt")
 }
 
 # cat_split_positions ----------------------------------------------------------
+#' @importFrom kwb.utils multiSubstitute objectToText
 cat_split_positions <- function(x)
 {
   x %>%
@@ -831,6 +694,8 @@ split_after <- function(x, i)
 }
 
 # prepare_split_assignments_for_non_treated ------------------------------------
+#' @importFrom kwb.utils catAndRun getAttribute
+#' @importFrom utils file.edit
 prepare_split_assignments_for_non_treated <- function(x)
 {
   # Non-handled words with corresponding patterns
@@ -868,10 +733,12 @@ prepare_split_assignments_for_non_treated <- function(x)
     write_lines_utf8(split_assignments, path = file)
   )
 
-  file.edit(file)
+  utils::file.edit(file)
 }
 
 # get_split_positions_from_pattern_file ----------------------------------------
+#' @importFrom kwb.utils allAreIdentical extractSubstring readLinesWithEncoding
+#' @importFrom stats setNames
 get_split_positions_from_pattern_file <- function(file = "patterns.txt")
 {
   substring_data <- kwb.utils::extractSubstring(
@@ -893,6 +760,7 @@ get_split_positions_from_pattern_file <- function(file = "patterns.txt")
 }
 
 # output_split_positions -------------------------------------------------------
+#' @importFrom yaml as.yaml
 output_split_positions <- function(split_positions, as_yaml = FALSE)
 {
   output <- if (as_yaml) {
@@ -928,13 +796,16 @@ remove_hyphens <- function(x)
 }
 
 # call_hyphenation_service -----------------------------------------------------
+#' @importFrom kwb.utils catAndRun isTryError
+#' @importFrom rvest html_element html_text read_html
+#' @importFrom utils URLencode
 call_hyphenation_service <- function(word)
 {
   url <- "https://www.silbentrennung24.de/wort/"
   
   html <- kwb.utils::catAndRun(
     paste("Looking up hyphenation for", word),
-    try(rvest::read_html(paste0(url, URLencode(word))))
+    try(rvest::read_html(paste0(url, utils::URLencode(word))))
   )
   
   if (kwb.utils::isTryError(html)) {
@@ -961,6 +832,7 @@ get_syllable_replacements <- function()
 }
 
 # replacements_double_consonants -----------------------------------------------
+#' @importFrom stats setNames
 replacements_double_consonants <- function()
 {
   consonants <- strsplit("bdfglmnprt", "")[[1L]]
@@ -1061,10 +933,12 @@ plot_wordcloud <- function(x, cex = 2)
 }
 
 # aggregate_syllable_data ------------------------------------------------------
+#' @importFrom kwb.utils defaultIfNA multiSubstitute removeColumns
+#' @importFrom stats aggregate setNames
 aggregate_syllable_data <- function(syllable_data)
 {
   # Aggregate by pure syllable (without hyphens)
-  pure_syllable_data <- aggregate(
+  pure_syllable_data <- stats::aggregate(
     syllable_data[-1L], 
     by = list(syllable = remove_hyphens(syllable_data$syllable)),
     FUN = sum

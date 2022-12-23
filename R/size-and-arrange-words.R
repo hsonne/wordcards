@@ -1,20 +1,6 @@
-#
-# Size words according to their frequency and arrange them vertically
-# 
-if (FALSE)
-{
-  par(mar = rep(3, 4))
-  plot(NA, type = "n", xlim = c(0, 1), ylim = c(0, 1), xlab = "", ylab = "")
-  
-  add_sized_words_vertically(
-    words = c("hallo", "Testwort", "Wort"),
-    freqs = c(13L, 1L, 2L), 
-    vertical_space_share = 0.3, 
-    spacing_method = "proportional" # "equal"
-  )
-}
-
 # add_sized_words_vertically ---------------------------------------------------
+#' @importFrom graphics abline
+#' @importFrom kwb.utils percentageOfSum
 add_sized_words_vertically <- function(
     words, freqs, ylim = c(0.2, 0.8), vertical_space_share = 0.2, 
     spacing_method = "equal"
@@ -27,7 +13,7 @@ add_sized_words_vertically <- function(
   
   size <- get_size_info(words, cex = weights)
   
-  abline(h = ylim, lty = 3L)
+  graphics::abline(h = ylim, lty = 3L)
   
   expansion_factor <- cex_to_fit_rectangles(
     widths = size$width, 
@@ -61,12 +47,13 @@ get_size_info <- function(words, cex)
 }
 
 # get_text_size_and_line_space -------------------------------------------------
+#' @importFrom graphics strheight strwidth
 get_text_size_and_line_space <- function(word, cex = 1, units = "user")
 {
   #word <- "hallo"
   
-  width <- function(x) strwidth(x, units, cex = cex)
-  height <- function(x) strheight(x, units, cex = cex)
+  width <- function(x) graphics::strwidth(x, units, cex = cex)
+  height <- function(x) graphics::strheight(x, units, cex = cex)
   
   h1 <- height(word)
   h2 <- height(paste0(word, "\n", word))
@@ -75,6 +62,7 @@ get_text_size_and_line_space <- function(word, cex = 1, units = "user")
 }
 
 # cex_to_fit_rectangles --------------------------------------------------------
+#' @importFrom kwb.utils quotient
 cex_to_fit_rectangles <- function(
     widths, heights, dx = 1, dy = 1, vertical_space_share = 0.1
 )
