@@ -1,0 +1,16 @@
+url: https://kwb-r.github.io/wordcards
+authors:
+  Hauke Sonnenberg:
+    href: https://github.com/hsonne
+template:
+  bootstrap: 5
+  bootswatch: cerulean
+  bslib:
+    bg: '#ffffff'
+    fg: '#000000'
+    primary: '#007aff'
+    border-radius: 0.5rem
+    btn-border-radius: 0.25rem
+development:
+  mode: auto
+

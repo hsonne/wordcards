@@ -1,20 +1,20 @@
-#
-# Size words according to their frequency and arrange them vertically
-# 
-if (FALSE)
+# plot_wordcloud ---------------------------------------------------------------
+plot_wordcloud <- function(x, cex = 2)
 {
-  par(mar = rep(3, 4))
-  plot(NA, type = "n", xlim = c(0, 1), ylim = c(0, 1), xlab = "", ylab = "")
+  #cex <- 2
   
-  add_sized_words_vertically(
-    words = c("hallo", "Testwort", "Wort"),
-    freqs = c(13L, 1L, 2L), 
-    vertical_space_share = 0.3, 
-    spacing_method = "proportional" # "equal"
-  )
+  x <- sort(x, decreasing = TRUE)
+  
+  # wordcloud::wordcloud(
+  #   names(x), unname(x), scale = c(1, 10), min.freq = 1L, random.order = FALSE,
+  #   rot.per = 0)
+  init_empty_plot(xlim = c(0, 1), ylim = c(0, 1))
+  add_sized_words_vertically(words = names(x), freqs = unname(x))
 }
 
 # add_sized_words_vertically ---------------------------------------------------
+#' @importFrom graphics abline
+#' @importFrom kwb.utils percentageOfSum
 add_sized_words_vertically <- function(
     words, freqs, ylim = c(0.2, 0.8), vertical_space_share = 0.2, 
     spacing_method = "equal"
@@ -22,9 +22,12 @@ add_sized_words_vertically <- function(
 {
   weights <- kwb.utils::percentageOfSum(freqs)
   
+  # cex values should not differ too much between each other
+  weights <- rescale(weights, target_range = c(1, 2))
+  
   size <- get_size_info(words, cex = weights)
   
-  abline(h = ylim, lty = 3L)
+  graphics::abline(h = ylim, lty = 3L)
   
   expansion_factor <- cex_to_fit_rectangles(
     widths = size$width, 
@@ -58,12 +61,13 @@ get_size_info <- function(words, cex)
 }
 
 # get_text_size_and_line_space -------------------------------------------------
+#' @importFrom graphics strheight strwidth
 get_text_size_and_line_space <- function(word, cex = 1, units = "user")
 {
   #word <- "hallo"
   
-  width <- function(x) strwidth(x, units, cex = cex)
-  height <- function(x) strheight(x, units, cex = cex)
+  width <- function(x) graphics::strwidth(x, units, cex = cex)
+  height <- function(x) graphics::strheight(x, units, cex = cex)
   
   h1 <- height(word)
   h2 <- height(paste0(word, "\n", word))
@@ -72,6 +76,7 @@ get_text_size_and_line_space <- function(word, cex = 1, units = "user")
 }
 
 # cex_to_fit_rectangles --------------------------------------------------------
+#' @importFrom kwb.utils quotient
 cex_to_fit_rectangles <- function(
     widths, heights, dx = 1, dy = 1, vertical_space_share = 0.1
 )
@@ -139,4 +144,18 @@ arrange_vertically <- function(heights, ylim, method = "proportional")
   }
   
   cumsum(c(ylim[1L], heights[-n] + dy))
+}
+
+# rescale ----------------------------------------------------------------------
+rescale <- function(x, target_range = c(0, 1))
+{
+  x_range <- range(x)
+  diff_x_range <- diff(x_range)
+  
+  if (diff_x_range == 0) {
+    return(rep(mean(target_range), length(x)))
+  }
+  
+  ratio <- diff(target_range) / diff_x_range
+  (x - x_range[1L]) * ratio  + target_range[1L]
 }
