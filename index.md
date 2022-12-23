@@ -1,9 +1,9 @@
-[![R-CMD-check](https://github.com/KWB-R/wordcards/workflows/R-CMD-check/badge.svg)](https://github.com/KWB-R/wordcards/actions?query=workflow%3AR-CMD-check)
-[![pkgdown](https://github.com/KWB-R/wordcards/workflows/pkgdown/badge.svg)](https://github.com/KWB-R/wordcards/actions?query=workflow%3Apkgdown)
-[![codecov](https://codecov.io/github/KWB-R/wordcards/branch/main/graphs/badge.svg)](https://codecov.io/github/KWB-R/wordcards)
+[![R-CMD-check](https://github.com/hsonne/wordcards/workflows/R-CMD-check/badge.svg)](https://github.com/hsonne/wordcards/actions?query=workflow%3AR-CMD-check)
+[![pkgdown](https://github.com/hsonne/wordcards/workflows/pkgdown/badge.svg)](https://github.com/hsonne/wordcards/actions?query=workflow%3Apkgdown)
+[![codecov](https://codecov.io/github/hsonne/wordcards/branch/main/graphs/badge.svg)](https://codecov.io/github/hsonne/wordcards)
 [![Project Status](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/wordcards)]()
-[![R-Universe_Status_Badge](https://kwb-r.r-universe.dev/badges/wordcards)](https://kwb-r.r-universe.dev/)
+[![R-Universe_Status_Badge](https://hsonne.r-universe.dev/badges/wordcards)](https://hsonne.r-universe.dev/)
 
 This package provides functions to analyse the frequency of
 words or syllables in a given text. It provides a function to create a
@@ -28,5 +28,5 @@ if (! require("remotes")) {
 }
 
 # Install KWB package 'wordcards' from GitHub
-remotes::install_github("KWB-R/wordcards")
+remotes::install_github("hsonne/wordcards")
 ```
