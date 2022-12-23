@@ -198,7 +198,6 @@ text_to_words <- function(raw_text)
 clean_text <- function(raw_text)
 {
   kwb.utils::multiSubstitute(raw_text, list(
-    #'[“„.,?!:-]' = " ",
     "[^A-Za-zÄÖÜäöüß]" = ".",
     "[.]+" = " "
   ))
