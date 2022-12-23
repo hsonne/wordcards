@@ -1,53 +1,3 @@
-# kwb.utils
-
-# read_text --------------------------------------------------------------------
-#' @importFrom kwb.utils readLinesWithEncoding selectElements
-read_text <- function(name)
-{
-  list_available_text_files() %>%
-    kwb.utils::selectElements(name) %>%
-    kwb.utils::readLinesWithEncoding(fileEncoding = "UTF-8") %>%
-    remove_comment_lines()
-}
-
-# list_available_text_files ----------------------------------------------------
-#' @importFrom kwb.utils removeExtension
-#' @importFrom stats setNames
-list_available_text_files <- function()
-{
-  path <- system.file("extdata/texts", package = "wordcards")
-  files <- as.list(dir(path, "\\.txt$", full.names = TRUE))
-  stats::setNames(files, kwb.utils::removeExtension(basename(unlist(files))))
-}
-
-# remove_comment_lines ---------------------------------------------------------
-remove_comment_lines <- function(x)
-{
-  grep("^#", x, invert = TRUE, value = TRUE)
-}
-
-# text_to_words ----------------------------------------------------------------
-#' @importFrom kwb.utils removeEmpty2
-text_to_words <- function(raw_text)
-{
-  raw_text %>%
-    clean_text() %>%
-    paste(collapse = " ") %>%
-    strsplit("\\s+") %>%
-    `[[`(1L) %>%
-    kwb.utils::removeEmpty2()
-}
-
-# clean_text -------------------------------------------------------------------
-#' @importFrom kwb.utils multiSubstitute
-clean_text <- function(raw_text)
-{
-  kwb.utils::multiSubstitute(raw_text, list(
-    "[^A-Za-zÄÖÜäöüß]" = ".",
-    "[.]+" = " "
-  ))
-}
-
 # guess_nouns_with_articles ----------------------------------------------------
 guess_nouns_with_articles <- function(words)
 {
@@ -915,20 +865,6 @@ is_word <- function(x) !(is_prefix(x) | is_suffix(x) | is_infix(x))
 determine_type_pattern <- function(word)
 {
   paste(split_words(word)$type, collapse = "-")
-}
-
-# plot_wordcloud ---------------------------------------------------------------
-plot_wordcloud <- function(x, cex = 2)
-{
-  #cex <- 2
-  
-  x <- sort(x, decreasing = TRUE)
-  
-  # wordcloud::wordcloud(
-  #   names(x), unname(x), scale = c(1, 10), min.freq = 1L, random.order = FALSE,
-  #   rot.per = 0)
-  init_empty_plot(xlim = c(0, 1), ylim = c(0, 1))
-  add_sized_words_vertically(words = names(x), freqs = unname(x))
 }
 
 # aggregate_syllable_data ------------------------------------------------------
