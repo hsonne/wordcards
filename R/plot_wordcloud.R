@@ -40,29 +40,19 @@ add_sized_words_vertically <- function(
 }
 
 # get_size_info ----------------------------------------------------------------
-get_size_info <- function(words, cex)
+get_size_info <- function(words, cex = 1, units = "user")
 {
-  as.data.frame(do.call(rbind, mapply(
-    FUN = get_text_size_and_line_space,
-    words,
-    cex,
-    SIMPLIFY = FALSE
-  )))
-}
-
-# get_text_size_and_line_space -------------------------------------------------
-#' @importFrom graphics strheight strwidth
-get_text_size_and_line_space <- function(word, cex = 1, units = "user")
-{
-  #word <- "hallo"
-  
   width <- function(x) graphics::strwidth(x, units, cex = cex)
   height <- function(x) graphics::strheight(x, units, cex = cex)
   
-  h1 <- height(word)
-  h2 <- height(paste0(word, "\n", word))
+  heights_one_row <- height(words)
+  heights_two_rows <- height(paste0(words, "\n", words))
 
-  c(width = width(word), height = h1, space = h2 - 2 * h1)
+  data.frame(
+    width = width(words),
+    height = heights_one_row,
+    space = heights_two_rows - 2 * heights_one_row
+  )
 }
 
 # cex_to_fit_rectangles --------------------------------------------------------
