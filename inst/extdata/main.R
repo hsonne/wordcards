@@ -81,7 +81,7 @@ if (FALSE)
   )
   
   kwb.utils::toPdf(landscape = FALSE, {
-    par(mar = c(1, 1, 1, 1), mfrow = c(8L, 4L))
+    par(mar = c(0.1, 0.2, 0.1, 0.2), mfrow = c(8L, 2L))
     lapply(card_info, wordcards:::plot_card_from_card_info)
   })
   
