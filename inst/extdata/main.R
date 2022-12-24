@@ -67,14 +67,6 @@ if (FALSE)
   
   lapply(formatted_stats, function(x) 0.01 * kwb.utils::percentageOfSum(x))
   
-  kwb.utils::toPdf(
-    pdfFile = "./inst/extdata/output/syllables_hahn-und-huhn.pdf", 
-    expressions = {
-      graphics::par(mfrow = c(3L, 4L), mar = c(0.2, 0.2, 0.2, 0.2))
-      lapply(formatted_stats, wordcards:::plot_wordcloud)
-    }
-  )
-  
   card_info <- wordcards:::get_card_info(
     formatted_stats[order(lengths(formatted_stats))], 
     hyphenated_words = word_table$hyphenated

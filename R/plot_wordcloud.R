@@ -1,17 +1,3 @@
-# plot_wordcloud ---------------------------------------------------------------
-plot_wordcloud <- function(x, cex = 2)
-{
-  #cex <- 2
-  
-  x <- sort(x, decreasing = TRUE)
-  
-  # wordcloud::wordcloud(
-  #   names(x), unname(x), scale = c(1, 10), min.freq = 1L, random.order = FALSE,
-  #   rot.per = 0)
-  init_empty_plot(xlim = c(0, 1), ylim = c(0, 1))
-  add_sized_words_vertically(words = names(x), freqs = unname(x))
-}
-
 # add_sized_words_vertically ---------------------------------------------------
 #' @importFrom graphics abline
 #' @importFrom kwb.utils percentageOfSum
