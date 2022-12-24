@@ -75,7 +75,7 @@ get_text_size_and_line_space <- function(word, cex = 1, units = "user")
   
   h1 <- height(word)
   h2 <- height(paste0(word, "\n", word))
-  
+
   c(width = width(word), height = h1, space = h2 - 2 * h1)
 }
 
@@ -150,16 +150,3 @@ arrange_vertically <- function(heights, ylim, method = "proportional")
   cumsum(c(ylim[1L], heights[-n] + dy))
 }
 
-# rescale ----------------------------------------------------------------------
-rescale <- function(x, target_range = c(0, 1))
-{
-  x_range <- range(x)
-  diff_x_range <- diff(x_range)
-  
-  if (diff_x_range == 0) {
-    return(rep(mean(target_range), length(x)))
-  }
-  
-  ratio <- diff(target_range) / diff_x_range
-  (x - x_range[1L]) * ratio  + target_range[1L]
-}
