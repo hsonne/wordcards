@@ -129,3 +129,28 @@ positions_between <- function(n, limits = c(-1, 1))
     seq(limits[1L], by = diff(limits)/(n - 1), length.out = n)
   }
 }
+
+# plot_card_from_card_info -----------------------------------------------------
+plot_card_from_card_info <- function(card)
+{
+  wordcards:::init_empty_plot(c(0, 1), c(0, 1))
+  ylim <- c(0.2, 0.95)
+  
+  x <- card$frequencies
+  add_sized_words_vertically(
+    words = names(x), 
+    freqs = unname(x),
+    xlim = c(0, 0.45),
+    ylim = ylim
+  )
+  
+  x <- stats::setNames(rep(1, length(card$words)), card$words)
+  add_sized_words_vertically(
+    words = names(x), 
+    freqs = unname(x),
+    xlim = c(0.55, 1),
+    ylim = ylim
+  )
+  
+  abline(v = 0.5, lty = 3L)
+}

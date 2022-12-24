@@ -16,7 +16,11 @@ plot_wordcloud <- function(x, cex = 2)
 #' @importFrom graphics abline
 #' @importFrom kwb.utils percentageOfSum
 add_sized_words_vertically <- function(
-    words, freqs, ylim = c(0.2, 0.8), vertical_space_share = 0.2, 
+    words, 
+    freqs, 
+    xlim = c(0, 1), 
+    ylim = c(0.2, 0.8), 
+    vertical_space_share = 0.2, 
     spacing_method = "equal"
 )
 {
@@ -32,13 +36,13 @@ add_sized_words_vertically <- function(
   expansion_factor <- cex_to_fit_rectangles(
     widths = size$width, 
     heights = size$height, 
-    dx = 1,
+    dx = diff(xlim),
     dy = diff(ylim),
     vertical_space_share = vertical_space_share
   )
   
   text_right_above(
-    x = 0,
+    x = xlim[1L],
     y = arrange_vertically(
       heights = size$height * expansion_factor, 
       ylim = ylim, 
