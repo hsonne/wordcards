@@ -131,26 +131,76 @@ positions_between <- function(n, limits = c(-1, 1))
 }
 
 # plot_card_from_card_info -----------------------------------------------------
-plot_card_from_card_info <- function(card)
+plot_card_from_card_info <- function(card, what = c("frequencies", "words"))
 {
-  wordcards:::init_empty_plot(c(0, 1), c(0, 1))
+  init_empty_plot(c(0, 1), c(0, 1))
+  
+  if (is.null(card)) {
+    return()
+  }
+  
   ylim <- c(0.2, 0.95)
+
+  plot_frequencies <- "frequencies" %in% what
+  plot_words <- "words" %in% what
   
-  x <- card$frequencies
-  add_sized_words_vertically(
-    words = names(x), 
-    freqs = unname(x),
-    xlim = c(0, 0.45),
-    ylim = ylim
-  )
+  if (plot_frequencies) {
+    x <- card$frequencies
+    add_sized_words_vertically(
+      words = names(x), 
+      weights = unname(x),
+      xlim = if (plot_words) c(0, 0.45) else c(0.1, 0.9),
+      ylim = ylim
+    )
+  }
+
+  if (plot_words) {
+    x <- stats::setNames(rep(1, length(card$words)), card$words)
+    add_sized_words_vertically(
+      words = names(x), 
+      weights = unname(x),
+      xlim = if (plot_frequencies) c(0.55, 1) else c(0.1, 0.9),
+      ylim = ylim
+    )
+  }
   
-  x <- stats::setNames(rep(1, length(card$words)), card$words)
-  add_sized_words_vertically(
-    words = names(x), 
-    freqs = unname(x),
-    xlim = c(0.55, 1),
-    ylim = ylim
-  )
+  if (plot_frequencies && plot_words) {
+    abline(v = 0.5, lty = 3L)
+  }
+}
+
+# plot_syllable_cards ----------------------------------------------------------
+plot_syllable_cards <- function(card_info, mfrow = c(6L, 3L))
+{
+  flap_indices <- function(indices, mfrow) {
+    m <- matrix(indices, nrow = mfrow[1L], ncol = mfrow[2L], byrow = TRUE)
+    m[, rev(seq_len(mfrow[2L])), drop = FALSE]
+  }
   
-  abline(v = 0.5, lty = 3L)
+  kwb.utils::toPdf(landscape = FALSE, {
+    
+    graphics::par(mar = c(0.1, 0.2, 0.1, 0.2), mfrow = mfrow)
+    
+    n <- length(card_info)
+    n_per_page <- prod(mfrow)
+    
+    indices_by_page <- split(seq_len(n), (seq_len(n) - 1L) %/% n_per_page)
+    
+    for (indices in indices_by_page) {
+      
+      length(indices) <- prod(mfrow)
+      
+      lapply(
+        card_info[indices], 
+        plot_card_from_card_info,
+        what = "frequencies"
+      )
+      
+      lapply(
+        card_info[c(t(flap_indices(indices, mfrow)))], 
+        plot_card_from_card_info,
+        what = "words"
+      )
+    }
+  })
 }

@@ -2,8 +2,6 @@
 
 export("%>%")
 importFrom(graphics,abline)
-importFrom(graphics,strheight)
-importFrom(graphics,strwidth)
 importFrom(graphics,text)
 importFrom(kwb.plot,bestRowColumnSetting)
 importFrom(kwb.utils,allAreIdentical)

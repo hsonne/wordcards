@@ -10,9 +10,9 @@ if (FALSE)
 
   wordcards:::add_sized_words_vertically(
     words = c("hallo", "Testwort", "Wort"),
-    freqs = c(13L, 1L, 2L), 
-    vertical_space_share = 0.3, 
-    spacing_method = "proportional" # "equal"
+    weights = c(13L, 1L, 2L), 
+    space_share_y = 0.3, 
+    space_method = "proportional" # "equal"
   )
 }
 
@@ -62,21 +62,19 @@ if (FALSE)
   #View(syllable_data)
   
   stopifnot(!anyDuplicated(syllable_data$syllable))
-  
+
   formatted_stats <- wordcards:::aggregate_syllable_data(syllable_data)
   
-  lapply(formatted_stats, function(x) 0.01 * kwb.utils::percentageOfSum(x))
+  indices <- order(-sapply(formatted_stats, sum), names(formatted_stats))
+  formatted_stats <- formatted_stats[indices]
   
   card_info <- wordcards:::get_card_info(
     formatted_stats[order(lengths(formatted_stats))], 
     hyphenated_words = word_table$hyphenated
   )
-  
-  kwb.utils::toPdf(landscape = FALSE, {
-    par(mar = c(0.1, 0.2, 0.1, 0.2), mfrow = c(8L, 2L))
-    lapply(card_info, wordcards:::plot_card_from_card_info)
-  })
-  
+
+  wordcards:::plot_syllable_cards(card_info)
+
   word_table <- data.frame(
     nchar = nchar(syllable_data$syllable),
     word = syllable_data$syllable,
