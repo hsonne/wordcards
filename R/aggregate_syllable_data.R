@@ -3,6 +3,10 @@
 #' @importFrom stats aggregate setNames
 aggregate_syllable_data <- function(syllable_data)
 {
+  suffix <- function(x) paste0("-", x)
+  prefix <- function(x) paste0(x, "-")
+  infix <- function(x) paste0("-", x, "-")
+  
   # Aggregate by pure syllable (without hyphens)
   pure_syllable_data <- stats::aggregate(
     syllable_data[-1L], 
@@ -31,9 +35,6 @@ aggregate_syllable_data <- function(syllable_data)
     x <- sort(compressed_stats[[name]], decreasing = TRUE)
     lower <- tolower(name)
     upper <- to_upper_case(name)
-    suffix <- function(x) paste0("-", x)
-    prefix <- function(x) paste0(x, "-")
-    infix <- function(x) paste0("-", x, "-")
     stats::setNames(x, kwb.utils::multiSubstitute(names(x), list(
       words_lower = lower,
       words_upper = upper,
