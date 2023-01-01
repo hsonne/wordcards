@@ -70,7 +70,7 @@ if (FALSE)
   formatted_stats <- formatted_stats[indices]
   
   card_info <- wordcards:::get_card_info(
-    formatted_stats[order(lengths(formatted_stats))], 
+    formatted_stats, 
     hyphenated_word_frequencies = stats::setNames(
       word_table$n_total,
       word_table$hyphenated
