@@ -131,7 +131,9 @@ positions_between <- function(n, limits = c(-1, 1))
 }
 
 # plot_card_from_card_info -----------------------------------------------------
-plot_card_from_card_info <- function(card, what = c("frequencies", "words"))
+plot_card_from_card_info <- function(
+    card, what = c("frequencies", "words"), index = 1L, times = 1L
+)
 {
   init_empty_plot(c(0, 1), c(0, 1))
   
@@ -150,12 +152,13 @@ plot_card_from_card_info <- function(card, what = c("frequencies", "words"))
       words = names(x), 
       weights = unname(x),
       xlim = if (plot_words) c(0, 0.45) else c(0.1, 0.9),
-      ylim = ylim
+      ylim = ylim, 
+      resize = TRUE
     )
   }
 
   if (plot_words) {
-    x <- stats::setNames(rep(1, length(card$words)), card$words)
+    x <- card$words
     add_sized_words_vertically(
       words = names(x), 
       weights = unname(x),
@@ -163,6 +166,12 @@ plot_card_from_card_info <- function(card, what = c("frequencies", "words"))
       ylim = ylim
     )
   }
+
+  # left-justified: rank (#1, #2, #3, ...)
+  text(0.1, 0.08, paste0("#", index), adj = c(0, 1))
+  
+  # right-justified: frequency (1x, 2x, 3x, ...)
+  text(0.9, 0.08, paste0(times, "x"), adj = c(1, 1))
   
   if (plot_frequencies && plot_words) {
     abline(v = 0.5, lty = 3L)
@@ -179,28 +188,35 @@ plot_syllable_cards <- function(card_info, mfrow = c(6L, 3L))
   
   kwb.utils::toPdf(landscape = FALSE, {
     
-    graphics::par(mar = c(0.1, 0.2, 0.1, 0.2), mfrow = mfrow)
+    graphics::par(mar = c(0.2, 0.2, 0.2, 0.2), mfrow = mfrow)
     
     n <- length(card_info)
     n_per_page <- prod(mfrow)
-    
-    indices_by_page <- split(seq_len(n), (seq_len(n) - 1L) %/% n_per_page)
+
+    page_numbers <- (seq_len(n) - 1L) %/% n_per_page
+    indices_by_page <- split(seq_len(n), page_numbers)
     
     for (indices in indices_by_page) {
       
       length(indices) <- prod(mfrow)
+
+      for (index in indices) {
+        plot_card_from_card_info(
+          card = card_info[[index]],
+          what = "frequencies",
+          index = index,
+          times = sum(card_info[[index]]$frequencies)
+        )
+      }
       
-      lapply(
-        card_info[indices], 
-        plot_card_from_card_info,
-        what = "frequencies"
-      )
-      
-      lapply(
-        card_info[c(t(flap_indices(indices, mfrow)))], 
-        plot_card_from_card_info,
-        what = "words"
-      )
+      for (index in c(t(flap_indices(indices, mfrow)))) {
+        plot_card_from_card_info(
+          card_info[[index]], 
+          what = "words",
+          index = index,
+          times = sum(card_info[[index]]$words)
+        )
+      }
     }
   })
 }

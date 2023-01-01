@@ -8,11 +8,16 @@ add_sized_words_vertically <- function(
     ylim = c(0.2, 0.8), 
     space_share_y = 0.2, 
     space_method = "equal",
-    col = "black"
+    col = "black",
+    resize = TRUE
 )
 {
-  graphics::abline(h = ylim, v = xlim, lt = 3)
-
+  #graphics::abline(h = ylim, v = xlim, lt = 3)
+  if (!resize) {
+    words <- paste0(words, " (", weights, "x)")
+    weights <- 1
+  }
+  
   # Get width, height and space between words for each word
   size_info <- get_size_info(words, weights)
   
@@ -35,8 +40,20 @@ add_sized_words_vertically <- function(
   y <- arrange_vertically(heights = size_info$height, ylim = ylim)
   
   kwb.utils::printIf(TRUE, size_info)  
-  
+
   text_right_above(xlim[1L], y, words, cex = cex*weights, col = col)
+  
+  # Write word frequencies as "1x", "2x", ..., to the left of the words
+  if (length(words) > 1L) {
+    text(
+      x = xlim[1L] * 0.8, 
+      y = y, 
+      labels = paste0(weights, "x"), 
+      cex = 1, 
+      adj = c(1, 0), 
+      col = "darkgrey"
+    )
+  }
 }
 
 # get_size_info ----------------------------------------------------------------

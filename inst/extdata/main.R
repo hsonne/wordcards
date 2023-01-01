@@ -1,6 +1,7 @@
 #
 # Source the whole script first to load the function definitions below
 #
+`%>%` <- magrittr::`%>%`
 
 # MAIN: Size words according to their frequency and arrange them vertically ----
 if (FALSE)
@@ -70,7 +71,10 @@ if (FALSE)
   
   card_info <- wordcards:::get_card_info(
     formatted_stats[order(lengths(formatted_stats))], 
-    hyphenated_words = word_table$hyphenated
+    hyphenated_word_frequencies = stats::setNames(
+      word_table$n_total,
+      word_table$hyphenated
+    )
   )
 
   wordcards:::plot_syllable_cards(card_info)
