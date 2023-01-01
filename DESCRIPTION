@@ -11,13 +11,16 @@ Description: This package provides functions to analyse the frequency of
     their frequencies. The idea is to use these cards to help children
     learn to read.
 License: MIT + file LICENSE
-URL: https://github.com/KWB-R/wordcards
-BugReports: https://github.com/KWB-R/wordcards/issues
+URL: https://github.com/hsonne/wordcards
+BugReports: https://github.com/hsonne/wordcards/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
 Suggests: 
-    covr
+    covr,
+    DT,
+    knitr,
+    rmarkdown
 Imports:
     kwb.plot,
     kwb.utils,
@@ -27,3 +30,4 @@ Imports:
 Remotes:
     github::KWB-R/kwb.plot,
     github::KWB-R/kwb.utils
+VignetteBuilder: knitr

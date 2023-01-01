@@ -1,6 +1,7 @@
 #
 # Source the whole script first to load the function definitions below
 #
+`%>%` <- magrittr::`%>%`
 
 # MAIN: Size words according to their frequency and arrange them vertically ----
 if (FALSE)
@@ -10,9 +11,9 @@ if (FALSE)
 
   wordcards:::add_sized_words_vertically(
     words = c("hallo", "Testwort", "Wort"),
-    freqs = c(13L, 1L, 2L), 
-    vertical_space_share = 0.3, 
-    spacing_method = "proportional" # "equal"
+    weights = c(13L, 1L, 2L), 
+    space_share_y = 0.3, 
+    space_method = "proportional" # "equal"
   )
 }
 
@@ -62,18 +63,22 @@ if (FALSE)
   #View(syllable_data)
   
   stopifnot(!anyDuplicated(syllable_data$syllable))
-  
+
   formatted_stats <- wordcards:::aggregate_syllable_data(syllable_data)
   
-  lapply(formatted_stats, function(x) 0.01 * kwb.utils::percentageOfSum(x))
+  indices <- order(-sapply(formatted_stats, sum), names(formatted_stats))
+  formatted_stats <- formatted_stats[indices]
   
-  kwb.utils::toPdf(pdfFile = "./inst/extdata/output/syllables_hahn-und-huhn.pdf", {
-    graphics::par(mfrow = c(3L, 4L), mar = c(0.2, 0.2, 0.2, 0.2))
-    lapply(formatted_stats, wordcards:::plot_wordcloud)
-  })
-  
-  formatted_stats[order(lengths(formatted_stats))]
-  
+  card_info <- wordcards:::get_card_info(
+    formatted_stats, 
+    hyphenated_word_frequencies = stats::setNames(
+      word_table$n_total,
+      word_table$hyphenated
+    )
+  )
+
+  wordcards:::plot_syllable_cards(card_info)
+
   word_table <- data.frame(
     nchar = nchar(syllable_data$syllable),
     word = syllable_data$syllable,
@@ -91,7 +96,8 @@ if (FALSE)
     file = sprintf("inst/extdata/output/cards_%s.pdf", name), 
     both_cases = FALSE, 
     cex = 2.2,
-    label_types = c(1L, 2L, 2L)
+    label_types = c(1L, 2L, 2L),
+    to_pdf = FALSE
   )
   
 }
@@ -144,20 +150,6 @@ if (FALSE)
   #hyphenation <- lapply(words, wordcards:::call_hyphenation_service)
   #words_raw <- kwb.utils::multiSubstitute(words, wordcards:::get_syllable_replacements())
   #writeLines(grep("-", words_raw, value = TRUE))
-}
-
-# read_story_kater_leo_arzt ----------------------------------------------------
-read_story_kater_leo_arzt <- function()
-{
-  html <- rvest::read_html("https://www.zitronenbande.de/kater-leo-arzt/")
-  
-  text_lines <- strsplit(rvest::html_text(html), "\n")[[1L]]
-  
-  story_line <- grep("aktualisiert", text_lines, value = TRUE)
-  
-  pattern <- "aktualisiert: \\d{2}\\.\\d{2}\\.\\d{4}(.*)$"
-  
-  kwb.utils::extractSubstring(pattern, story_line, 1L)
 }
 
 # MAIN: Download texts that are available online -------------------------------

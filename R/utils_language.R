@@ -1,3 +1,15 @@
+# add_hyphens ------------------------------------------------------------------
+add_hyphens <- function(x, hyphen = "-")
+{
+  except_last <- -length(x)
+  except_first <- -1L
+  
+  x[except_last] <- paste0(x[except_last], hyphen)
+  x[except_first] <- paste0(hyphen, x[except_first])
+  
+  x
+}
+
 # has_ch_at --------------------------------------------------------------------
 has_ch_at <- function(x, i)
 {
@@ -36,6 +48,24 @@ is_diphthong <- function(x)
   x %in% replace_specials(c("ei", "au", "<ae>u", "eu", "ai", "oi", "ui"))
 }
 
+# is_infix ---------------------------------------------------------------------
+is_infix <- function(x)
+{
+  startsWith(x, "-") & endsWith(x, "-")
+}
+
+# is_prefix --------------------------------------------------------------------
+is_prefix <- function(x)
+{
+  !startsWith(x, "-") & endsWith(x, "-")
+}
+
+# is_suffix --------------------------------------------------------------------
+is_suffix <- function(x)
+{
+  startsWith(x, "-") & !endsWith(x, "-")
+}
+
 # is_true_for_part_at ----------------------------------------------------------
 is_true_for_part_at <- function(x, i, fun, ...)
 {
@@ -55,6 +85,18 @@ is_upper_case <- function(x)
 is_vowel <- function(chars)
 {
   grepl(pattern = replace_specials("[aeiou<ae><oe><ue>y]"), chars)
+}
+
+# is_word ----------------------------------------------------------------------
+is_word <- function(x)
+{
+  !(is_prefix(x) | is_suffix(x) | is_infix(x))
+}
+
+# remove_hyphens ---------------------------------------------------------------
+remove_hyphens <- function(x)
+{
+  gsub("-", "", x)
 }
 
 # replace_specials -------------------------------------------------------------

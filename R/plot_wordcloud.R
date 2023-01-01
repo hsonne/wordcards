@@ -1,103 +1,94 @@
-# plot_wordcloud ---------------------------------------------------------------
-plot_wordcloud <- function(x, cex = 2)
-{
-  #cex <- 2
-  
-  x <- sort(x, decreasing = TRUE)
-  
-  # wordcloud::wordcloud(
-  #   names(x), unname(x), scale = c(1, 10), min.freq = 1L, random.order = FALSE,
-  #   rot.per = 0)
-  init_empty_plot(xlim = c(0, 1), ylim = c(0, 1))
-  add_sized_words_vertically(words = names(x), freqs = unname(x))
-}
-
 # add_sized_words_vertically ---------------------------------------------------
 #' @importFrom graphics abline
 #' @importFrom kwb.utils percentageOfSum
 add_sized_words_vertically <- function(
-    words, freqs, ylim = c(0.2, 0.8), vertical_space_share = 0.2, 
-    spacing_method = "equal"
+    words, 
+    weights, 
+    xlim = c(0, 1), 
+    ylim = c(0.2, 0.8), 
+    space_share_y = 0.2, 
+    space_method = "equal",
+    col = "black",
+    resize = TRUE
 )
 {
-  weights <- kwb.utils::percentageOfSum(freqs)
+  #graphics::abline(h = ylim, v = xlim, lt = 3)
+  if (!resize) {
+    words <- paste0(words, " (", weights, "x)")
+    weights <- 1
+  }
   
-  # cex values should not differ too much between each other
-  weights <- rescale(weights, target_range = c(1, 2))
+  # Get width, height and space between words for each word
+  size_info <- get_size_info(words, weights)
   
-  size <- get_size_info(words, cex = weights)
+  h <- sum(size_info$height)
+  w <- max(size_info$width)
   
-  graphics::abline(h = ylim, lty = 3L)
+  dx <- diff(xlim)
+  dy <- diff(ylim)
   
-  expansion_factor <- cex_to_fit_rectangles(
-    widths = size$width, 
-    heights = size$height, 
-    dx = 1,
-    dy = diff(ylim),
-    vertical_space_share = vertical_space_share
-  )
+  cex <- if (h/w > dy/dx) {
+    (1 - space_share_y) * dy / h
+  } else {
+    cex <- dx / w
+  }
   
-  text_right_above(
-    x = 0,
-    y = arrange_vertically(
-      heights = size$height * expansion_factor, 
-      ylim = ylim, 
-      method = spacing_method
-    ),
-    text = words, 
-    cex = weights * expansion_factor
-  )
+  print(cex*weights)
+  
+  size_info <- get_size_info(words, cex*weights)
+  
+  y <- arrange_vertically(heights = size_info$height, ylim = ylim)
+  
+  kwb.utils::printIf(TRUE, size_info)  
+
+  text_right_above(xlim[1L], y, words, cex = cex*weights, col = col)
+  
+  # Write word frequencies as "1x", "2x", ..., to the left of the words
+  if (length(words) > 1L) {
+    text(
+      x = xlim[1L] * 0.8, 
+      y = y, 
+      labels = paste0(weights, "x"), 
+      cex = 1, 
+      adj = c(1, 0), 
+      col = "darkgrey"
+    )
+  }
 }
 
 # get_size_info ----------------------------------------------------------------
-get_size_info <- function(words, cex)
+get_size_info <- function(words, cex = 1, units = "user")
 {
-  as.data.frame(do.call(rbind, mapply(
-    FUN = get_text_size_and_line_space,
-    words,
-    cex,
-    SIMPLIFY = FALSE
-  )))
-}
+  width <- function(x, cex) graphics::strwidth(x, units, cex = cex)
+  height <- function(x, cex) graphics::strheight(x, units, cex = cex)
 
-# get_text_size_and_line_space -------------------------------------------------
-#' @importFrom graphics strheight strwidth
-get_text_size_and_line_space <- function(word, cex = 1, units = "user")
-{
-  #word <- "hallo"
-  
-  width <- function(x) graphics::strwidth(x, units, cex = cex)
-  height <- function(x) graphics::strheight(x, units, cex = cex)
-  
-  h1 <- height(word)
-  h2 <- height(paste0(word, "\n", word))
-  
-  c(width = width(word), height = h1, space = h2 - 2 * h1)
+  heights_one_row <- mapply(height, words, cex)
+  heights_two_rows <- mapply(height, paste0(words, "\n", words), cex)
+
+  data.frame(
+    width = mapply(width, words, cex),
+    height = heights_one_row,
+    space = heights_two_rows - 2 * heights_one_row
+  )
 }
 
 # cex_to_fit_rectangles --------------------------------------------------------
 #' @importFrom kwb.utils quotient
 cex_to_fit_rectangles <- function(
-    widths, heights, dx = 1, dy = 1, vertical_space_share = 0.1
+    width, height, dx = 1, dy = 1, space_share_x = 0, space_share_y = 0
 )
 {
-  w <- max(widths)
-  h <- sum(heights)
-  
-  # h/w < 1: width determines cex
-  # h/w > 1: height determines cex
-  width_rules <- h/w < dy/dx
-  
-  kwb.utils::quotient(
-    ifelse(width_rules, dx, (1 - vertical_space_share) * dy),
-    ifelse(width_rules, w, h)
-  )
+  if (height/width < dy/dx) {
+    (1 - space_share_x) * dx / width
+  } else {
+    (1 - space_share_y) * dy / height
+  } 
 }
 
 # text_right_above -------------------------------------------------------------
-text_right_above <- function(x, y, text, cex)
+text_right_above <- function(x, y, text, cex, ...)
 {
-  text(x, y, text, cex = cex, adj = c(0, 0))
+  text(x, y, text, cex = cex, adj = c(0, 0), ...)
 }
 
 # arrange_vertically -----------------------------------------------------------
@@ -146,16 +137,3 @@ arrange_vertically <- function(heights, ylim, method = "proportional")
   cumsum(c(ylim[1L], heights[-n] + dy))
 }
 
-# rescale ----------------------------------------------------------------------
-rescale <- function(x, target_range = c(0, 1))
-{
-  x_range <- range(x)
-  diff_x_range <- diff(x_range)
-  
-  if (diff_x_range == 0) {
-    return(rep(mean(target_range), length(x)))
-  }
-  
-  ratio <- diff(target_range) / diff_x_range
-  (x - x_range[1L]) * ratio  + target_range[1L]
-}

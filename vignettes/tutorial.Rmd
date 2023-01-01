@@ -1,0 +1,119 @@
+---
+title: "Erstellen von Wort- und Silbenkarten für Erstleser"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Erstellen von Wort- und Silbenkarten für Erstleser}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Hintergrund
+
+Die Idee zu diesem R-Paket kam mir bei meiner Beschäftigung als Lesepate an
+einer Berliner Grundschule. Die Kinder, die ich betreue, können in der dritten
+Klasse zum Teil noch sehr schlecht lesen. Ich habe angefangen, mit Karteikarten
+zu arbeiten, auf die ich Wörter oder Silben schrieb. Ich hatte den Eindruck,
+dass es ein bisschen funktioniert hat und dass es den Kindern etwas Spaß gemacht
+hat, mit den Karten zu arbeiten. Ich habe festgestellt, dass es sehr viele
+verschiedene Wörter und Silben gibt und ich habe mich gefragt, welche ich
+aufschreiben sollte, welche wohl am "wichtigsten" sein könnten, weil sie am 
+häufigsten vorkommen.
+
+Die Häufigkeit der Wörter und Silben hängt natürlich von dem Text oder der Menge
+von Texten ab, die ich betrachte. Ich dachte mir, dass es zielführend sein
+könnte, wenn ich mir genau den Text angucke, den die Kinder in der Schule als
+nächstes lesen würden.
+
+Dieses Paket enthält Funktionen, die die Wörter in einem vorgegebenen Text
+zählen oder sie in Silben zerlegen und dann die Silben und deren Arten 
+(Vorsilbe, Nachsilbe, "innere" Silbe, eigenständiges Wort) zählen.
+
+Im Folgenden möchte ich zeigen, wie das geht.
+
+## Bereitstellen eines Textes
+
+Als erstes benötigen wir einen Text. Ich habe im Internet einen frei 
+zugänglichen Text gefunden unter dieser Adresse: 
+https://www.zitronenbande.de/kater-leo-arzt/
+
+Ich habe eine Funktion geschrieben, die den Text aus dem Internet lädt. Im 
+ersten Schritt lesen wir den gesamten Text in die Variable `raw_text` ein:
+
+```{r setup}
+raw_text <- wordcards:::read_story_kater_leo_arzt()
+```
+
+Der Text entspricht einer langen Zeile, von der wir hier mal nur die ersten
+80 Zeichen ausgeben:
+
+```{r show_start_of_text}
+writeLines(substr(raw_text, 1L, 80L))
+```
+
+## Zerlegen des Textes in seine Wörter
+
+Als nächstes zerlegen wir den Text in seine Wörter, wobei alle 
+Interpunktionszeichen (Punkt, Komma, Fragezeichen, usw.) sowie Ziffern
+ignoriert werden.
+
+```{r split_text_into_words}
+words <- wordcards:::text_to_words(raw_text)
+```
+
+Der Text hat insgesamt `r length(words)` Wörter. Die ersten sind:
+
+```{r first_words}
+head(words)
+```
+
+Die letzten Wörter des Textes sind:
+
+```{r last_words}
+tail(words)
+```
+
+## Häufigste Wörter
+
+Wir können bereits sehr einfach die häufigsten Wörter ermitteln:
+
+```{r most_frequent_words}
+tail(sort(table(words)))
+```
+Zuerst werden die verschiedenen Wörter mit `table()` gezählt, dann werden die
+entsprechenden Haufigkeiten mit `sort()` aufsteigend sortiert. Schließlich 
+werden die letzten (also häufigsten) Wörter mit `tail()` geholt und ausgegeben.
+
+Als Vorbereitung für die Erstellung der Karteikarten wird eine Tabelle erzeugt,
+die die Wörter (`word`), absteigend nach ihrer Häufigkeit (`frequency`)
+sortiert, zusammen mit ihrer Häufigkeit und mit der Anzahl ihrer Buchstaben
+(`nchar`) enthält.
+
+```{r create_word_table}
+word_table <- wordcards:::words_to_word_table(words)
+```
+
+Hier seht ihr die vollständige Tabelle:
+
+```{r results = "asis"}
+DT::datatable(word_table)
+```
+
+```{r fig.width = 8, fig.height = 12}
+n <- 32
+
+wordcards:::plot_word_cards(
+  words = word_table$word[1:n], 
+  frequencies = word_table$frequency[1:n], 
+  both_cases = FALSE,
+  to_pdf = FALSE,
+  cex = 3
+)
+```
+
