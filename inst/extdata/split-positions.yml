@@ -12,6 +12,7 @@ DT-CH: 0
 1c-2v-SZ: 0
 1c-DT-1c: 0
 1c-DT-2c: 0
+1c-DT-3c: 0
 1c-DT-SZ: 0
 1v-1c-2v: 0
 2c-1v-1c: 0
@@ -33,10 +34,12 @@ DT-CH: 0
 1c-1v-SCH: 0
 SCH-1v-1c: 0
 SCH-1v-2c: 0
+SCH-1v-4c: 0
 SCH-2v-1c: 0
 1c-1v-1c-CH: 0
 1c-1v-CH-1c: 0
 1c-1v-CH-2c: 0
+1c-1v-CK-1c: 0
 1c-DT-CH-1c: 0
 1v-1c-1v-1c: 0
 1v-1c-1v-2c: 0
@@ -48,6 +51,7 @@ SCH-1c-1v-CK: 0
 1c-1v-1c-CH-1c: 0
 SCH-1c-1v-CK-1c: 0
 1c-3v: 2
+3v-1c: 2
 3v-2c: 2
 1c-2v-3c: 2
 1v-2c-1v: 2
@@ -69,6 +73,7 @@ DT-1c-1v-1c: 2
 1c-1v-1c-1v-SZ: 2
 1c-1v-1c-DT-1c: 2
 1c-1v-1c-DT-2c: 2
+1c-1v-2c-1v-3c: 2
 1c-1v-CH-1v-1c: 2
 1c-1v-CH-1v-2c: 2
 1c-1v-CK-1v-1c: 2
@@ -146,8 +151,14 @@ DT-1c-1v-1c: 2
 DT-1c-1v-3c-1v-CH:
 - 2
 - 6
+DT-SZ-1v-2c-1v-1c:
+- 2
+- 5
 1c-1v-SCH-1c-1v-2c: 2
 1v-1c-SCH-1c-1v-1c: 2
+1v-3c-1v-SCH-1v-1c:
+- 2
+- 5
 1c-1v-1c-1v-1c-1v-1c:
 - 2
 - 4
@@ -155,6 +166,9 @@ DT-1c-1v-3c-1v-CH:
 - 2
 - 4
 1c-1v-1c-1v-2c-1v-1c:
+- 2
+- 5
+1c-1v-1c-1v-2c-1v-2c:
 - 2
 - 5
 1c-1v-1c-1v-2c-1v-CH:
@@ -194,6 +208,9 @@ DT-1c-1v-3c-1v-CH:
 - 2
 - 4
 - 7
+1v-2c-1v-1c-1v-CH-1c:
+- 2
+- 4
 1v-2c-1v-2c-1v-CH-1c:
 - 2
 - 5
@@ -421,6 +438,9 @@ DT-2c-1v-2c-1v-1c:
 DT-2c-1v-2c-1v-2c:
 - 3
 - 6
+DT-2c-DT-1c-1v-1c:
+- 3
+- 6
 DT-3c-DT-1c-1v-1c:
 - 3
 - 7
@@ -449,6 +469,9 @@ DT-3c-DT-1c-1v-1c:
 1c-1v-2c-1v-CH-1c-1v:
 - 3
 - 7
+1c-1v-2c-DT-1c-1v-1c:
+- 3
+- 6
 1c-1v-3c-1v-1c-1v-1c:
 - 3
 - 6
@@ -531,6 +554,10 @@ DT-2c-1v-3c-1v-2c-1v-1c:
 - 3
 - 6
 - 9
+1c-1v-2c-1v-2c-1v-CH-1v-1c:
+- 3
+- 6
+- 8
 1c-1v-2c-1v-4c-1v-2c-1v-1c:
 - 3
 - 6
@@ -598,6 +625,7 @@ DT-2c-1v-3c-1v-2c-1v-1c:
 3c-1v-SZ-1v: 4
 SCH-1v-1c-1v: 4
 1c-1v-3c-1v-1c: 4
+1c-1v-3c-1v-2c: 4
 1c-1v-3c-1v-CH: 4
 1c-1v-3c-DT-1c: 4
 1c-1v-4c-1v-1c: 4
@@ -636,6 +664,7 @@ SCH-1v-1c-1v-1c: 4
 1c-DT-4c-1v-2c-1v:
 - 4
 - 9
+1v-1c-1v-1c-1v-2c: 4
 1v-4c-1v-1c-1v-CH:
 - 4
 - 6
@@ -709,6 +738,10 @@ SCH-1v-1c-1v-1c: 4
 2c-1v-3c-1v-CK-2c-1v-SCH:
 - 4
 - 10
+1c-1v-3c-1v-2c-1v-2c-1v-1c:
+- 4
+- 7
+- 10
 1c-1v-CH-1c-1v-1c-1v-1c-1v:
 - 4
 - 6
@@ -743,6 +776,7 @@ SCH-DT-1c-1v: 5
 2c-1v-3c-1v-CH: 5
 2c-1v-CK-1c-1v: 5
 2c-2v-2c-1v-1c: 5
+2c-2v-2c-DT-1c: 5
 2c-DT-2c-1v-1c: 5
 3c-2v-1c-1v-1c: 5
 4c-1v-1c-1v-1c: 5
@@ -772,6 +806,12 @@ SCH-1v-2c-1v-2c-1v:
 2c-1v-3c-1v-3c-1v-2c:
 - 5
 - 9
+2c-2v-2c-1v-CH-1v-1c:
+- 5
+- 7
+2c-DT-2c-DT-1c-1v-1c:
+- 5
+- 8
 3c-1v-2c-1v-1c-1v-1c:
 - 5
 - 7
