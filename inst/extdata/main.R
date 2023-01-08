@@ -24,6 +24,7 @@ if (FALSE)
   name <- "die-groesste-getreidepflanze"
   name <- "hahn-und-huhn"
   name <- "kater-leo-arzt"
+  name <- "lasse-will-nicht-aufraeumen"
   
   raw_text <- wordcards:::read_text(name)
 }
@@ -54,6 +55,7 @@ if (FALSE)
   #View(word_table)
   
   word_table$hyphenated <- wordcards:::hyphenate(word_table$word)
+  #wordcards:::update_split_positions()
   
   syllable_data <- wordcards:::syllables_to_syllable_table(
     hyphenated = word_table$hyphenated, 
