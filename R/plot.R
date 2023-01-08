@@ -132,7 +132,8 @@ positions_between <- function(n, limits = c(-1, 1))
 
 # plot_card_from_card_info -----------------------------------------------------
 plot_card_from_card_info <- function(
-    card, what = c("frequencies", "words"), index = 1L, times = 1L
+    card, what = c("frequencies", "words"), index = 1L, times = 1L, 
+    syllable = "Silbe?"
 )
 {
   init_empty_plot(c(0, 1), c(0, 1))
@@ -141,7 +142,7 @@ plot_card_from_card_info <- function(
     return()
   }
   
-  ylim <- c(0.2, 0.95)
+  ylim <- c(0.25, 0.9)
 
   plot_frequencies <- "frequencies" %in% what
   plot_words <- "words" %in% what
@@ -151,10 +152,17 @@ plot_card_from_card_info <- function(
     add_sized_words_vertically(
       words = names(x), 
       weights = unname(x),
-      xlim = if (plot_words) c(0, 0.45) else c(0.1, 0.9),
-      ylim = ylim, 
-      resize = TRUE
+      xlim = if (plot_words) c(0, 0.45) else c(0.15, 0.85),
+      ylim = ylim
     )
+    
+    # frequency ("x Silben")
+    text(0.95, 0.1, adj = c(1, 1), paste(
+      times, ifelse(times > 1L, "Silben", "Silbe")
+    ))
+    
+    # rank (#1, #2, #3, ...)
+    text(0.05, 0.1, adj = c(0, 1), paste0("#", index))
   }
 
   if (plot_words) {
@@ -162,17 +170,16 @@ plot_card_from_card_info <- function(
     add_sized_words_vertically(
       words = names(x), 
       weights = unname(x),
-      xlim = if (plot_frequencies) c(0.55, 1) else c(0.1, 0.9),
+      xlim = if (plot_frequencies) c(0.55, 1) else c(0.15, 0.85),
       ylim = ylim
     )
+    
+    # centered: "x Woerter"
+    text(0.95, 0.1, adj = c(1, 1), paste(
+      times, ifelse(times > 1L, "W\uF6rter", "Wort")
+    ))
   }
 
-  # left-justified: rank (#1, #2, #3, ...)
-  text(0.1, 0.08, paste0("#", index), adj = c(0, 1))
-  
-  # right-justified: frequency (1x, 2x, 3x, ...)
-  text(0.9, 0.08, paste0(times, "x"), adj = c(1, 1))
-  
   if (plot_frequencies && plot_words) {
     abline(v = 0.5, lty = 3L)
   }
@@ -186,37 +193,44 @@ plot_syllable_cards <- function(card_info, mfrow = c(6L, 3L))
     m[, rev(seq_len(mfrow[2L])), drop = FALSE]
   }
   
-  kwb.utils::toPdf(landscape = FALSE, {
-    
-    graphics::par(mar = c(0.2, 0.2, 0.2, 0.2), mfrow = mfrow)
-    
-    n <- length(card_info)
-    n_per_page <- prod(mfrow)
-
-    page_numbers <- (seq_len(n) - 1L) %/% n_per_page
-    indices_by_page <- split(seq_len(n), page_numbers)
-    
-    for (indices in indices_by_page) {
+  kwb.utils::toPdf(
+    landscape = FALSE, 
+    borderWidth.cm = 3, 
+    borderHeight.cm = 3, 
+    expressions = {
       
-      length(indices) <- prod(mfrow)
-
-      for (index in indices) {
-        plot_card_from_card_info(
-          card = card_info[[index]],
-          what = "frequencies",
-          index = index,
-          times = sum(card_info[[index]]$frequencies)
-        )
-      }
+      graphics::par(mar = c(0.3, 0.3, 0.3, 0.3), mfrow = mfrow)
       
-      for (index in c(t(flap_indices(indices, mfrow)))) {
-        plot_card_from_card_info(
-          card_info[[index]], 
-          what = "words",
-          index = index,
-          times = sum(card_info[[index]]$words)
-        )
+      n <- length(card_info)
+      n_per_page <- prod(mfrow)
+      
+      page_numbers <- (seq_len(n) - 1L) %/% n_per_page
+      indices_by_page <- split(seq_len(n), page_numbers)
+      
+      for (indices in indices_by_page) {
+        
+        length(indices) <- prod(mfrow)
+        
+        for (index in indices) {
+          plot_card_from_card_info(
+            card = card_info[[index]],
+            what = "frequencies",
+            index = index,
+            times = sum(card_info[[index]]$frequencies),
+            syllable = names(card_info)[index]
+          )
+        }
+        
+        for (index in c(t(flap_indices(indices, mfrow)))) {
+          plot_card_from_card_info(
+            card_info[[index]], 
+            what = "words",
+            index = index,
+            times = sum(card_info[[index]]$words),
+            syllable = names(card_info)[index]
+          )
+        }
       }
     }
-  })
+  )
 }
