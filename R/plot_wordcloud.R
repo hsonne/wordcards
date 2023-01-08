@@ -9,13 +9,15 @@ add_sized_words_vertically <- function(
     space_share_y = 0.2, 
     space_method = "equal",
     col = "black",
-    resize = TRUE
+    resize = FALSE
 )
 {
   #graphics::abline(h = ylim, v = xlim, lt = 3)
+  
+  freqs <- weights
+  
   if (!resize) {
-    words <- paste0(words, " (", weights, "x)")
-    weights <- 1
+    weights <- rep(1, length(freqs))
   }
   
   # Get width, height and space between words for each word
@@ -43,12 +45,12 @@ add_sized_words_vertically <- function(
 
   text_right_above(xlim[1L], y, words, cex = cex*weights, col = col)
   
-  # Write word frequencies as "1x", "2x", ..., to the left of the words
+  # Write word frequencies as "1", "2", ..., to the left of the words
   if (length(words) > 1L) {
     text(
       x = xlim[1L] * 0.8, 
       y = y, 
-      labels = paste0(weights, "x"), 
+      labels = paste0(freqs, "x"),
       cex = 1, 
       adj = c(1, 0), 
       col = "darkgrey"
